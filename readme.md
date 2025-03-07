@@ -9,9 +9,9 @@ public-sentiment-analysis/
 │
 ├── README.md                   # 项目说明文件
 │
-├── data/
-|   ├── raw
-|   └──                      # 数据文件夹
+├── data/                       # 数据文件夹
+|   ├── raw                     # 找到的数据集
+|   └── processed               # 处理过的数据集                    
 │
 ├── models/                     # 模型文件夹
 │   └── fine_tuned_model/       # 微调后的模型
