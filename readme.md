@@ -1,5 +1,5 @@
 # 基于自然语言处理的立场检测-舆情分析系统
-使用微调的BERT实现立场检测。
+使用微调的mBERT实现立场检测。
 
 
 
@@ -9,7 +9,9 @@ public-sentiment-analysis/
 │
 ├── README.md                   # 项目说明文件
 │
-├── data/                       # 数据文件夹
+├── data/
+    ├── raw
+    └──                      # 数据文件夹
 │
 ├── models/                     # 模型文件夹
 │   └── fine_tuned_model/       # 微调后的模型
@@ -26,3 +28,9 @@ public-sentiment-analysis/
 └── logs/                       # 日志文件夹
 
 ```
+
+## 实现步骤
+### 处理数据集
+我们采用VAST数据集（英文）、Weibo-SD数据集（中文）、NLPCC-2016数据集（中文）微调mBERT。
+
+这些数据集中，前者是`.csv`格式，后两者是`.json`格式，需要处理成`.csv`格式便于调用。

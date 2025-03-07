@@ -1,11 +1,14 @@
 import json
 import torch
 
-import models
-from dataset import Dataset
+
 from transformers import AdamW
 from transformers.optimization import get_scheduler
-from models import BertModel
 from transformers import BertTokenizer
+import os
 
-from params import get_config
+os.environ["TRANSFORMERS_CACHE"] = "models/pretrained"
+
+from datasets import load_dataset
+
+ds = load_dataset("strombergnlp/nlpcc-stance")
