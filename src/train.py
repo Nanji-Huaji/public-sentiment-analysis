@@ -1,30 +1,19 @@
 import json
 import torch
-
-
 from transformers import AdamW
 from transformers.optimization import get_scheduler
 from transformers import BertTokenizer
 from datasets import load_dataset
 import evaluate
-
 import numpy as np
-
 from transformers import AutoModelForSequenceClassification
 from transformers import TrainingArguments
-
 from transformers import TrainingArguments, Trainer
 
 
 # 处理数据集
 
 tokenizer = BertTokenizer.from_pretrained("google-bert/bert-base-multilingual-cased")
-
-
-# def tokenize_function(examples):
-#     # 将 text 和 target 列合并为一个输入序列，并使用 [SEP] 标记分隔它们
-#     combined_texts = [text + " [SEP] " + target for text, target in zip(examples["text"], examples["target"])]
-#     return tokenizer(combined_texts, padding="max_length", truncation=True)
 
 
 def tokenize_function(examples):
@@ -45,20 +34,17 @@ training_args = TrainingArguments(output_dir="models/output")
 metric = evaluate.load("f1")
 
 
-def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    predictions = np.argmax(logits, axis=-1)
-    return metric.compute(predictions=predictions, references=labels)
-
-
 training_args = TrainingArguments(output_dir="models/output", eval_strategy="epoch")
+
+id2label = {0: "AGAINST", 1: "POSITIVE", 2: "NEITHER"}
+
+label2id = {"AGAINST": 0, "POSITIVE": 1, "NEITHER": 2}
 
 trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=tokenized_train_datasets,
     eval_dataset=tokenized_test_datasets,
-    compute_metrics=compute_metrics,
 )
 
 trainer.train()

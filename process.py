@@ -16,6 +16,7 @@ def process_vast(original_train_file, original_test_file):
     # process train data
     def process_table(file: str):
         df = pd.read_csv(file)
+        df = df.dropna(subset=["post", "new_topic", "ori_topic"])  # 跳过标签为空的部分
         processed_df = pd.DataFrame()
         processed_df["text"] = df["post"]
         # 如果 new_topic 非空，取 new_topic 作为 target 列，否则取 ori_topic 作为 target
@@ -35,6 +36,8 @@ def process_weibo_sd(original_train_file, original_test_file):
     def process_json_file(file: str):
         with open(file, "r") as f:
             data = json.load(f)
+        # 过滤掉标签为空的部分
+        data = [item for item in data if item["label"] is not None]
         # 只选择需要的列
         filtered_data = {
             "text": [item["text"] for item in data],
@@ -51,6 +54,7 @@ def process_weibo_sd(original_train_file, original_test_file):
 
 def process_nlpcc(nlpcc_file, split_ratio):
     df = pd.read_csv(nlpcc_file)
+    df = df.dropna(subset=["text", "target", "stance"])  # 跳过标签为空的部分
     df = df.sample(frac=1).reset_index(drop=True)
     # 计算分割点
     split_point = int(len(df) * split_ratio)
@@ -85,7 +89,7 @@ def main():
     pd.DataFrame(columns=col_name).to_csv(train_csv, index=False)
     pd.DataFrame(columns=col_name).to_csv(test_csv, index=False)
     # 处理 VAST 数据集
-    process_vast("data/raw/vast/VAST/vast_train.csv", "data/raw/vast/VAST/vast_test.csv")
+    # process_vast("data/raw/vast/VAST/vast_train.csv", "data/raw/vast/VAST/vast_test.csv")
     # 处理 Weibo SD 数据集
     process_weibo_sd("data/raw/Weibo-SD/train.json", "data/raw/Weibo-SD/test.json")
     # 处理 NLPCC 数据集
