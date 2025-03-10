@@ -22,8 +22,7 @@ def process_vast(original_train_file, original_test_file):
         processed_df["target"] = df.apply(
             lambda row: row["new_topic"] if pd.notna(row["new_topic"]) else row["ori_topic"], axis=1
         )
-        # 取 label 作为 label 列
-        processed_df["label"] = df["label"]
+
         # 将处理后的 DataFrame 追加到 train_csv 所对应的 CSV 文件中
         save_file = train_csv if "train" in file else test_csv
         processed_df.to_csv(save_file, mode="a", header=False, index=False)
