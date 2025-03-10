@@ -7,8 +7,8 @@ from transformers.optimization import get_scheduler
 from transformers import BertTokenizer
 import os
 
-os.environ["TRANSFORMERS_CACHE"] = "models/pretrained"
+from transformers import AutoModelForSequenceClassification
+from transformers import TrainingArguments
 
-from datasets import load_dataset
-
-ds = load_dataset("strombergnlp/nlpcc-stance")
+model = AutoModelForSequenceClassification.from_pretrained("google-bert/bert-base-multilingual-cased", num_labels=3)
+training_args = TrainingArguments(output_dir="models/output")
