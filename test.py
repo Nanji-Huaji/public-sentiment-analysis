@@ -64,7 +64,6 @@ trainer = Trainer(
     train_dataset=small_train_dataset,
     eval_dataset=small_eval_dataset,
     compute_metrics=compute_metrics,
-    compute_loss=compute_loss,
 )
 
 trainer.train()
