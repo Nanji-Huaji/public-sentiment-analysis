@@ -4,13 +4,13 @@ from transformers import AdamW
 from transformers.optimization import get_scheduler
 from transformers import BertTokenizer
 from datasets import load_dataset
-import evaluate
 import numpy as np
 from transformers import AutoModelForSequenceClassification
 from transformers import TrainingArguments
 from transformers import TrainingArguments, Trainer
 from sklearn.metrics import f1_score
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # 处理数据集
 
@@ -18,7 +18,16 @@ tokenizer = BertTokenizer.from_pretrained("google-bert/bert-base-multilingual-ca
 
 
 def tokenize_function(examples):
-    return tokenizer(examples["text"], padding="max_length", truncation=True)
+    # return tokenizer(
+    #     examples["text"] + "[SEP]" + f"The stance of the aformentioned text to target: {examples['target']} is:",
+    #     padding="max_length",
+    #     truncation=True,
+    # )
+    texts = [
+        text + f" [SEP]  The stance of the aformentioned text to target: {target} is: [MASK]"
+        for text, target in zip(examples["text"], examples["target"])
+    ]
+    return tokenizer(texts, padding="max_length", truncation=True)
 
 
 datasets = load_dataset("csv", data_files={"train": "data/processed/train.csv", "test": "data/processed/test.csv"})
@@ -36,8 +45,7 @@ model = AutoModelForSequenceClassification.from_pretrained(
     "google-bert/bert-base-multilingual-cased", num_labels=3, id2label=id2label, label2id=label2id
 )
 
-# model = AutoModelForSequenceClassification.from_pretrained("google-bert/bert-base-multilingual-cased", num_labels=3)
-training_args = TrainingArguments(output_dir="models/output")
+# training_args = TrainingArguments(output_dir="models/output")
 
 
 def compute_metrics(eval_pred):
