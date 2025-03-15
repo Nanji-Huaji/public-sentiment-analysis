@@ -13,18 +13,17 @@ test_csv = "data/processed/test.csv"
 
 
 def process_vast(original_train_file, original_test_file):
-    # process train data
     def process_table(file: str):
         df = pd.read_csv(file)
-        df = df.dropna(subset=["post", "new_topic", "ori_topic"])  # 跳过标签为空的部分
+        df = df.dropna(subset=["post", "new_topic", "ori_topic", "label"])  # 跳过标签为空的部分
         processed_df = pd.DataFrame()
         processed_df["text"] = df["post"]
-        # 如果 new_topic 非空，取 new_topic 作为 target 列，否则取 ori_topic 作为 target
         processed_df["target"] = df.apply(
             lambda row: row["new_topic"] if pd.notna(row["new_topic"]) else row["ori_topic"], axis=1
         )
+        processed_df["label"] = df["label"]
 
-        # 将处理后的 DataFrame 追加到 train_csv 所对应的 CSV 文件中
+        # 将处理后的 DataFrame 追加到 train_csv 或 test_csv 所对应的 CSV 文件中
         save_file = train_csv if "train" in file else test_csv
         processed_df.to_csv(save_file, mode="a", header=False, index=False)
 
@@ -89,7 +88,7 @@ def main():
     pd.DataFrame(columns=col_name).to_csv(train_csv, index=False)
     pd.DataFrame(columns=col_name).to_csv(test_csv, index=False)
     # 处理 VAST 数据集
-    # process_vast("data/raw/vast/VAST/vast_train.csv", "data/raw/vast/VAST/vast_test.csv")
+    process_vast("data/raw/vast/VAST/vast_train.csv", "data/raw/vast/VAST/vast_test.csv")
     # 处理 Weibo SD 数据集
     process_weibo_sd("data/raw/Weibo-SD/train.json", "data/raw/Weibo-SD/test.json")
     # 处理 NLPCC 数据集

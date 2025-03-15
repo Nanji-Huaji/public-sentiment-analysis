@@ -4,7 +4,7 @@ import openai
 
 
 class StanceDetection:
-    def __init__(self, model="models/output/checkpoint-825", tokenizer=None):
+    def __init__(self, model="models/produce/checkpoint-825", tokenizer=None):
         id2label = {0: "AGAINST", 1: "POSITIVE", 2: "NEITHER"}
         label2id = {"AGAINST": 0, "POSITIVE": 1, "NEITHER": 2}
         model = AutoModelForSequenceClassification.from_pretrained(
@@ -24,7 +24,7 @@ class StanceDetection:
         return self.classify(text, target)
 
     def process_csv(self, csv_file):
-        pass
+        classifier = pipeline("text-classification", model=self.model, tokenizer=self.tokenizer)
 
 
 class LLMInference:

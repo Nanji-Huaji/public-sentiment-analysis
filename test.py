@@ -3,7 +3,7 @@ from transformers import AutoTokenizer
 from transformers import AutoModelForSequenceClassification
 from transformers import TrainingArguments
 import numpy as np
-import evaluate
+import eval
 from transformers import TrainingArguments, Trainer
 from sklearn.metrics import f1_score
 
@@ -33,7 +33,7 @@ model = AutoModelForSequenceClassification.from_pretrained("google-bert/bert-bas
 training_args = TrainingArguments(output_dir="test_trainer")
 
 
-metric = evaluate.load("accuracy")
+metric = eval.load("accuracy")
 
 
 def compute_metrics(eval_pred):

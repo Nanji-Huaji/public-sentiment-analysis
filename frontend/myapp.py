@@ -4,17 +4,45 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import random
-import openai
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
-from inference import StanceDetection
+from inference import StanceDetection, LLMInference, SLMInference
 
 # 定义全局变量
 if "stance_detection" not in st.session_state:
     st.session_state.stance_detection = StanceDetection(
         "models/output/checkpoint-825", "google-bert/bert-base-multilingual-cased"
     )
+
+# 定义模型
+
+# if "gpt_4o" not in st.session_state:
+#     st.session_state.gpt_4o = LLMInference("gpt-4o")
+
+# if "deepseek_r1" not in st.session_state:
+#     st.session_state.deepseek_r1 = LLMInference("deepseek-r1")
+
+# if "gpt_35" not in st.session_state:
+#     st.session_state.gpt_35 = LLMInference("gpt-3.5")
+
+# if "gpt_3" not in st.session_state:
+#     st.session_state.gpt_3 = LLMInference("gpt-3")
+
+# if "slm" not in st.session_state:
+#     st.session_state.slm = SLMInference("qwen-2.5b")
+
+
+def draw_pie_chart(pos, neg, neu):
+    ratio = {"positive": pos, "negative": neg, "neutral": neu}
+    labels = list(ratio.keys())
+    sizes = [ratio[label] for label in labels]
+    colors = ["gold", "yellowgreen", "lightcoral"]
+    explode = (0, 0, 0)
+    fig, ax = plt.subplots()
+    ax.pie(sizes, explode=explode, labels=labels, colors=colors, autopct="%1.1f%%", shadow=True, startangle=90)
+    ax.axis("equal")
+    return fig
+
 
 # with st.sidebar:
 #     openai_api_key = st.text_input("OpenAI API Key", key="chatbot_api_key", type="password")
@@ -51,26 +79,19 @@ st.markdown(
 )
 
 topic = st.text_input("Enter a topic you want to monitor", "两会提出的政策")
+target = st.text_input("Enter a target you want to monitor", "政府")
 keyword_monitoring = st.text_input(
-    "Enter the keyword(s) about the posts you want to monitor, split by ','", "两会, 北京, 政府"
+    "Enter the keyword(s) about the posts you want to retrieve, split by ','", "两会, 北京, 政府"
 )
-st.selectbox("Select a social media platform", ["Weibo", "Twitter", "Facebook"])
-
-llm_used = st.selectbox("Select a language model", ["No LLM used", "GPT-3", "T5", "BART", "GPT-2"])
+platform = st.selectbox("Select a social media platform", ["Weibo", "RedNote", "Tieba"])
+date_range = st.date_input("Select a date range", [pd.to_datetime("2025-03-01"), pd.to_datetime("2025-03-10")])
+llm_used = st.selectbox("Select a language model", ["No LLM used", "GPT-4o", "DeepSeek-r1", "GPT-3.5", "GPT-3"])
 
 
 if st.button("Monitor"):
-    st.write(f"{random.randint(100, 1000)} posts have been collected.")
-    ratio = {"positive": 0.83, "negative": 0.1, "neutral": 0.07}
-    labels = list(ratio.keys())
-    sizes = [ratio[label] for label in labels]
-    colors = ["gold", "yellowgreen", "lightcoral"]
-    explode = (0, 0, 0)
-    fig, ax = plt.subplots()
-    ax.pie(sizes, explode=explode, labels=labels, colors=colors, autopct="%1.1f%%", shadow=True, startangle=90)
-    ax.axis("equal")
-    st.pyplot(fig)
 
+    fig = draw_pie_chart(0.87, 0.05, 0.08)
+    st.pyplot(fig)
     corrent_content = """
 Lorem ipsum dolor sit amet, vix error numquam ad. At sed paulo voluptatum, vix dicit soluta fuisset et. Veniam integre luptatum est no, ne ius percipit singulis. Mandamus urbanitas id eam, qui in mazim homero appetere. No porro clita graece eos, doming gubergren similique et mei. Vix et volumus abhorreant, an quot persius delenit has, vide contentiones ne quo.
 Ad officiis invenire sed, liber patrioque sadipscing pri no, interesset consequuntur an eam. Eu iuvaret nostrum has, quo id possit reprimique. Te iriure imperdiet deterruisset est, quot mutat id eos, est an malorum debitis intellegebat. Id diceret praesent maluisset vis, sit mucius deleniti ex. An vix vide posse iisque, quo assum aliquip an.
