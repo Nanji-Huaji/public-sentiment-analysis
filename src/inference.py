@@ -1,6 +1,7 @@
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 from transformers import BertTokenizer
 import openai
+from prompt import *
 
 
 class StanceDetection:
@@ -41,16 +42,51 @@ class LLMInference:
     def __call__(self, text):
         return self.inference(text)
 
+    def analyze(self, summary, target, **kwargs):
+        favor_rate = kwargs.get("favor_rate", "未提供")
+        neutral_rate = kwargs.get("neutral_rate", "未提供")
+        against_rate = kwargs.get("against_rate", "未提供")
+        top_words = kwargs.get("top_words", "未提供")
+        prompt = analyze_prompt.format(
+            summary=summary,
+            target=target,
+            favor_rate=favor_rate,
+            neutral_rate=neutral_rate,
+            against_rate=against_rate,
+            top_words=top_words,
+        )
+        analysis = self.inference(prompt)
+        return analysis
+
 
 class SLMInference:
     def __init__(self, model, api_base, api_key):
-        pass
+        self.model = model
+        self.api_base = api_base
+        self.api_key = api_key
+        openai = openai.OpenAI(api_key=api_key, api_base=api_base, model=model)
 
     def inference(self, text):
-        pass
+        response = openai.Completion.create(engine=self.model, prompt=text)
+        return response.choices[0].text
 
     def __call__(self, text):
         return self.inference(text)
 
-    def summary(self, text):
-        pass
+    def summary(self, favor_text, neutral_text, against_text, target, **kwargs):
+        favor_rate = kwargs.get("favor_rate", "未提供")
+        neutral_rate = kwargs.get("neutral_rate", "未提供")
+        against_rate = kwargs.get("against_rate", "未提供")
+        top_words = kwargs.get("top_words", "未提供")
+        prompt = summarize_prompt.format(
+            favor_text=favor_text,
+            neutral_text=neutral_text,
+            against_text=against_text,
+            target=target,
+            favor_rate=favor_rate,
+            neutral_rate=neutral_rate,
+            against_rate=against_rate,
+            top_words=top_words,
+        )
+        summary = self.inference(prompt)
+        return summary

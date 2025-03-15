@@ -8,3 +8,18 @@
     - platform: 社交媒体
     - time: 爬取时间
 """
+
+"""
+参考格式：
+"""
+
+
+class Crawler:
+    def __init__(self):
+        pass
+
+    def run(self):
+        pass
+
+    def save(self):
+        pass

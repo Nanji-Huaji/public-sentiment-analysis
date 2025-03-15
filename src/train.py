@@ -23,7 +23,7 @@ def tokenize_function(dataset):
     return tokenizer(
         text=dataset["text"],
         text_pair=dataset["target"],
-        max_length=256,  # 适当增大长度
+        max_length=256,
         truncation="only_first",  # 优先截断文本（保留完整目标）
         padding="max_length",
         add_special_tokens=True,
@@ -44,7 +44,7 @@ id2label = {0: "AGAINST", 1: "POSITIVE", 2: "NEITHER"}
 label2id = {"AGAINST": 0, "POSITIVE": 1, "NEITHER": 2}
 
 model = AutoModelForSequenceClassification.from_pretrained(
-    "google-bert/bert-base-multilingual-cased", num_labels=3, id2label=id2label, label2id=label2id
+    "models/output/f1-46", num_labels=3, id2label=id2label, label2id=label2id
 )
 
 
@@ -66,7 +66,7 @@ training_args = TrainingArguments(
     learning_rate=2e-5,
     per_device_train_batch_size=32,
     per_device_eval_batch_size=64,
-    num_train_epochs=10,
+    num_train_epochs=20,
     weight_decay=0.01,
     warmup_ratio=0.1,
     logging_steps=100,
