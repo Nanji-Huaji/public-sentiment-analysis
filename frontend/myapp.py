@@ -11,7 +11,7 @@ from inference import StanceDetection, LLMInference, SLMInference
 # 定义全局变量
 if "stance_detection" not in st.session_state:
     st.session_state.stance_detection = StanceDetection(
-        "models/output/checkpoint-825", "google-bert/bert-base-multilingual-cased"
+        "models/output/checkpoint-5600", "google-bert/bert-base-multilingual-cased"
     )
 
 # 定义模型
@@ -62,8 +62,8 @@ target = st.text_input("Enter a target you want to analyze", "I")
 if st.button("Analyze"):
     st.write(f"Analyzing: {sentence}")
     stance = stance_detection(sentence, target)
-    st.write(f"Sentiment: {stance[0]['label']}")
-    st.write(f"Confidence: {stance[0]['score']}")
+    st.write(f"Sentiment: {stance['label']}")
+    st.write(f"Confidence: {stance['score']}")
 
 st.title("Public Sentiment Monitoring")
 
