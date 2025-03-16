@@ -10,6 +10,7 @@ from transformers import TrainingArguments
 from transformers import TrainingArguments, Trainer
 from sklearn.metrics import f1_score
 from torch.nn import CrossEntropyLoss
+import pandas as pd
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -58,15 +59,32 @@ def compute_metrics(eval_pred):
     }
 
 
+def save_error_samples(trainer, dataset, output_file="logs/errors.csv"):
+    predictions = trainer.predict(dataset)
+    preds = np.argmax(predictions.predictions, axis=1)
+    errors = []
+    for i, (pred, label) in enumerate(zip(preds, dataset["label"])):
+        if pred != label:
+            errors.append(
+                {
+                    "text": dataset[i]["text"],
+                    "target": dataset[i]["target"],
+                    "true_label": id2label[label],
+                    "pred_label": id2label[pred],
+                }
+            )
+    pd.DataFrame(errors).to_csv(output_file)
+
+
 # 训练配置
 training_args = TrainingArguments(
     output_dir="models/output",
     evaluation_strategy="epoch",
     save_strategy="epoch",
-    learning_rate=2e-5,
-    per_device_train_batch_size=32,
-    per_device_eval_batch_size=64,
-    num_train_epochs=20,
+    learning_rate=4e-5,
+    per_device_train_batch_size=64,
+    per_device_eval_batch_size=128,
+    num_train_epochs=3,
     weight_decay=0.01,
     warmup_ratio=0.1,
     logging_steps=100,
@@ -102,3 +120,5 @@ trainer = WeightedTrainer(
 
 
 trainer.train()
+
+save_error_samples(trainer, tokenized_datasets["test"], output_file="logs/errors.csv")

@@ -11,29 +11,26 @@ id2label = {0: "AGAINST", 1: "POSITIVE", 2: "NEITHER"}
 label2id = {"AGAINST": 0, "POSITIVE": 1, "NEITHER": 2}
 
 model = BertForSequenceClassification.from_pretrained(
-    "models/output/f1-55", num_labels=3, label2id=label2id, id2label=id2label
+    "models/output/checkpoint-5600", num_labels=3, label2id=label2id, id2label=id2label
 )
 tokenizer = BertTokenizer.from_pretrained("google-bert/bert-base-multilingual-cased")
 
 
-def tokenize_function(examples):
-    texts = [
-        text + f" [SEP]  The stance of the aformentioned text to target: {target} is: [MASK]"
-        for text, target in zip(examples["text"], examples["target"])
-    ]
-    return tokenizer(texts, padding="max_length", truncation=True)
+def tokenize_function(dataset):
+    return tokenizer(
+        text=dataset["text"],
+        text_pair=dataset["target"],
+        max_length=256,
+        truncation="only_first",  # 优先截断文本（保留完整目标）
+        padding="max_length",
+        add_special_tokens=True,
+        return_attention_mask=True,
+    )
 
 
 datasets = load_dataset("csv", data_files={"train": "data/processed/train.csv", "test": "data/processed/test.csv"})
 test_datasets = datasets["test"]
 tokenized_test_datasets = test_datasets.map(tokenize_function, batched=True)
-
-
-# def compute_metrics(eval_pred):
-#     logits, labels = eval_pred
-#     predictions = np.argmax(logits, axis=-1)
-#     f1 = f1_score(labels, predictions, average="weighted")
-#     return {"f1": f1}
 
 metric = evaluate.load("f1")
 
@@ -55,7 +52,7 @@ trainer = Trainer(
 )
 
 
-eval_loop = 3
+eval_loop = 1
 result = []
 
 for i in range(eval_loop):
