@@ -14,6 +14,9 @@ if "stance_detection" not in st.session_state:
         "models/output/checkpoint-5600", "google-bert/bert-base-multilingual-cased"
     )
 
+if "slm" not in st.session_state:
+    st.session_state.slm = SLMInference()
+
 # 定义模型
 
 # if "gpt_4o" not in st.session_state:
@@ -27,9 +30,6 @@ if "stance_detection" not in st.session_state:
 
 # if "gpt_3" not in st.session_state:
 #     st.session_state.gpt_3 = LLMInference("gpt-3")
-
-# if "slm" not in st.session_state:
-#     st.session_state.slm = SLMInference("qwen-2.5b")
 
 
 def draw_pie_chart(pos, neg, neu):

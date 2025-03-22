@@ -8,6 +8,7 @@ def calculate_label_proportions(file_path):
 
     for label, proportion in label_proportions.items():
         print(f"Label {label}: {proportion:.2f}%")
+    return label_proportions.values()
 
 
 if __name__ == "__main__":

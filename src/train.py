@@ -10,6 +10,7 @@ from transformers import TrainingArguments
 from transformers import TrainingArguments, Trainer
 from sklearn.metrics import f1_score
 from torch.nn import CrossEntropyLoss
+import pandas as pd
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
