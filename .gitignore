@@ -4,3 +4,8 @@ train.log
 src/__pycache__/evaluate.cpython-312.pyc
 src/__pycache__/prompt.cpython-312.pyc
 src/__pycache__/inference.cpython-312.pyc
+logs/google-bert_bert-base-multilingual-cased_3_20250326_164325.log
+.gitignore
+logs/errors.csv
+logs/
+logs/errors.csv

@@ -12,7 +12,56 @@ from sklearn.metrics import f1_score
 from torch.nn import CrossEntropyLoss
 import pandas as pd
 
+import argparse
+
+import logging
+from datetime import datetime
+from utils import Logger
+import sys
+
+
+parser = argparse.ArgumentParser("Description: Train a sentiment analysis model")
+parser.add_argument(
+    "--class_counts",
+    type=float,
+    nargs=3,
+    default=[0.4152, 0.3953, 0.1895],
+    help="The ratio of each class in the dataset",
+)
+parser.add_argument(
+    "--train_epochs",
+    type=int,
+    default=3,
+    help="The number of epochs to train the model",
+)
+parser.add_argument(
+    "--checkpoint_path",
+    type=str,
+    default="google-bert/bert-base-multilingual-cased",
+    help="The path to the pre-trained model",
+)
+
+args = parser.parse_args()
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# 设置日志
+
+# 获取当前时间
+current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+# 构造日志文件名
+log_file_name = f"logs/{args.checkpoint_path.replace('/', '_')}_{args.train_epochs}_{current_time}.log"
+
+# 配置日志记录
+logging.basicConfig(
+    filename=log_file_name,
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
+
+sys.stdout = Logger(log_file_name)
+
 
 # 处理数据集
 
@@ -32,7 +81,9 @@ def tokenize_function(dataset):
     )
 
 
-datasets = load_dataset("csv", data_files={"train": "data/processed/train.csv", "test": "data/processed/test.csv"})
+datasets = load_dataset(
+    "csv", data_files={"train": "data/csv_data/VAST/train.csv", "test": "data/csv_data/VAST/test.csv"}
+)
 
 tokenized_datasets = datasets.map(tokenize_function, batched=True)
 
@@ -45,7 +96,7 @@ id2label = {0: "AGAINST", 1: "POSITIVE", 2: "NEITHER"}
 label2id = {"AGAINST": 0, "POSITIVE": 1, "NEITHER": 2}
 
 model = AutoModelForSequenceClassification.from_pretrained(
-    "models/output/f1-46", num_labels=3, id2label=id2label, label2id=label2id
+    args.checkpoint_path, num_labels=3, id2label=id2label, label2id=label2id
 )
 
 
@@ -84,7 +135,7 @@ training_args = TrainingArguments(
     learning_rate=4e-5,
     per_device_train_batch_size=64,
     per_device_eval_batch_size=128,
-    num_train_epochs=3,
+    num_train_epochs=args.train_epochs,
     weight_decay=0.01,
     warmup_ratio=0.1,
     logging_steps=100,
@@ -94,11 +145,19 @@ training_args = TrainingArguments(
 )
 
 
+logging.info("Training Arguments:")
+for key, value in vars(training_args).items():
+    logging.info(f"{key}: {value}")
+
+# 写入训练开始日志
+logging.info("Training started...")
+
+
 # 自定义Trainer处理类别不平衡
 class WeightedTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         # 给出类别不平衡的权重
-        class_counts = [0.4111, 0.3794, 0.2095]  # 各标签比例
+        class_counts = args.class_counts  # 各标签比例
         device = next(model.parameters()).device
         weights = torch.tensor([1 / (c + 1e-5) for c in class_counts], dtype=torch.float32, device=device)  # 逆频率加权
         weights = weights / weights.sum() * len(class_counts)  # 归一化

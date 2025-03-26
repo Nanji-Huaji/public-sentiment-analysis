@@ -90,10 +90,10 @@ def main():
     pd.DataFrame(columns=col_name).to_csv(train_csv, index=False)
     pd.DataFrame(columns=col_name).to_csv(test_csv, index=False)
     # 处理 VAST 数据集
-    process_vast("data/raw/vast/VAST/vast_train.csv", "data/raw/vast/VAST/vast_test.csv")
+    # process_vast("data/raw/vast/VAST/vast_train.csv", "data/raw/vast/VAST/vast_test.csv")
     # 处理 Weibo SD 数据集
-    process_weibo_sd("data/raw/Weibo-SD/train.json", "data/raw/Weibo-SD/test.json")
-    # 处理 NLPCC 数据集
+    # process_weibo_sd("data/raw/Weibo-SD/train.json", "data/raw/Weibo-SD/test.json")
+    # # 处理 NLPCC 数据集
     process_nlpcc("data/raw/nlpcc/train.csv", 0.8)
 
 
