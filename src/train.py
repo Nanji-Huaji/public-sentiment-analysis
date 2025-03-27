@@ -6,7 +6,6 @@ from transformers import BertTokenizer
 from datasets import load_dataset
 import numpy as np
 from transformers import AutoModelForSequenceClassification
-from transformers import TrainingArguments
 from transformers import TrainingArguments, Trainer
 from sklearn.metrics import f1_score
 from torch.nn import CrossEntropyLoss
@@ -18,6 +17,24 @@ import logging
 from datetime import datetime
 from utils import Logger
 import sys
+
+import os
+
+import shutil
+
+
+def get_checkpoint_path(file_path) -> str:
+    """
+    从文件路径中提取模型检查点路径
+    """
+    subdirs = [os.path.join(file_path, d) for d in os.listdir(file_path) if os.path.isdir(os.path.join(file_path, d))]
+
+    if not subdirs:
+        return None  # 如果没有子目录，返回 None
+
+    # 按最后修改时间排序，获取最新的子目录
+    latest_subdir = max(subdirs, key=os.path.getmtime)
+    return latest_subdir
 
 
 parser = argparse.ArgumentParser("Description: Train a sentiment analysis model")
@@ -31,7 +48,7 @@ parser.add_argument(
 parser.add_argument(
     "--train_epochs",
     type=int,
-    default=3,
+    default=50,
     help="The number of epochs to train the model",
 )
 parser.add_argument(
@@ -142,6 +159,7 @@ training_args = TrainingArguments(
     load_best_model_at_end=True,
     metric_for_best_model="f1",
     greater_is_better=True,
+    save_total_limit=10,
 )
 
 
@@ -166,6 +184,22 @@ class WeightedTrainer(Trainer):
         loss_fct = torch.nn.CrossEntropyLoss(weight=weights)
         loss = loss_fct(outputs.logits.view(-1, model.module.num_labels), labels.view(-1))
         return (loss, outputs) if return_outputs else loss
+
+    def save_model(self, output_dir=None, _internal_call=False):
+        # 调用父类的 save_model 方法
+        super().save_model(output_dir, _internal_call)
+
+        # 确保 logs/json 目录存在
+        os.makedirs("logs/json", exist_ok=True)
+
+        # 定义 trainer_state.json 的路径
+        trainer_state_path = os.path.join(output_dir, "trainer_state.json")
+        if os.path.exists(trainer_state_path):
+            # 复制 trainer_state.json 到 logs/json 目录
+            current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+            dest_path = os.path.join("logs/json", f"trainer_state_{os.path.basename(output_dir)}_{current_time}.json")
+            shutil.copy(trainer_state_path, dest_path)
+            logging.info(f"已将 {trainer_state_path} 复制到 {dest_path}")
 
 
 # 初始化Trainer

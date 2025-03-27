@@ -4,6 +4,9 @@ import os
 import math
 import pandas as pd
 
+DATASET_INCREASE_ROUND = 10  # 数据集增量轮数
+MODEL_TRAIN_EPOCHS = 10  # 模型训练轮数
+
 
 def process_dataset(raw_path: str, data_ratio_begin: float, data_ratio_end: float, processed_path: str):
     """
@@ -82,7 +85,7 @@ def train_model(data_ratio: list, train_epochs: int, checkpoint_path):
             "python",
             "train.py",
             "--data_ratio",
-            data_ratio,  # 将列表转换为字符串
+            data_ratio,
             "--train_epochs",
             train_epochs,
             "--checkpoint_path",
@@ -153,5 +156,80 @@ def get_checkpoint_path_f1_highest(file_path) -> str:
     return best_dir
 
 
+def get_best_checkpoint_from_latest_ten(file_path) -> str:
+    """
+    从 file_path 下最新的十个子目录的 trainer_state.json 文件中提取 eval_f1 值，
+    返回 eval_f1 最大的目录路径。
+
+    Args:
+        file_path (str): 父目录路径。
+
+    Returns:
+        str: eval_f1 最大的子目录路径。如果没有找到有效的目录，则返回 None。
+    """
+    best_f1 = float("-inf")  # 初始化为负无穷
+    best_dir = None
+
+    # 获取所有子目录，并按最后修改时间排序（从新到旧）
+    subdirs = sorted(
+        [os.path.join(file_path, d) for d in os.listdir(file_path) if os.path.isdir(os.path.join(file_path, d))],
+        key=os.path.getmtime,
+        reverse=True,
+    )
+
+    # 取最新的十个子目录
+    latest_five_subdirs = subdirs[:10]
+
+    # 遍历最新的十个子目录
+    for subdir in latest_five_subdirs:
+        trainer_state_path = os.path.join(subdir, "trainer_state.json")
+
+        # 检查 trainer_state.json 是否存在
+        if not os.path.exists(trainer_state_path):
+            continue
+
+        try:
+            # 读取 trainer_state.json 文件
+            with open(trainer_state_path, "r", encoding="utf-8") as f:
+                trainer_state = json.load(f)
+
+            # 提取 log_history 列表的最后一个元素
+            log_history = trainer_state.get("log_history", [])
+            if not log_history:
+                continue  # 如果 log_history 为空，跳过该目录
+
+            last_log = log_history[-1]  # 获取最后一个元素
+            eval_f1 = last_log.get("eval_f1")  # 提取 eval_f1 值
+
+            # 更新最佳目录
+            if eval_f1 is not None and eval_f1 > best_f1:
+                best_f1 = eval_f1
+                best_dir = subdir
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"解析 {trainer_state_path} 时出错: {e}")
+            continue
+
+    return best_dir
+
+
 def main():
-    pass
+    """
+    在运行第一次后删除is_initial_train = True
+    """
+    is_initial_train = True
+    for dataset in ["EZ-STANCE", "SemEval-2017", "nlpcc", "Weibo-SD", "C-Stance"]:
+        raw_path = f"data/csv_data/{dataset}"
+        processed_path = f"data/processed"
+        if is_initial_train:
+            checkpoint_path = get_checkpoint_path("models/output")
+        else:
+            checkpoint_path = get_best_checkpoint_from_latest_ten("models/output")
+        print(f"checkpoint_path: {checkpoint_path}")
+        for i in range(DATASET_INCREASE_ROUND):
+            data_ratio = [i * 1 / DATASET_INCREASE_ROUND, (i + 1) * 1 / DATASET_INCREASE_ROUND]
+            process_dataset(raw_path, data_ratio[0], data_ratio[1], processed_path)
+            label_proportions = calculate_label_proportions("data/processed/train.csv")
+            train_model(
+                [label_proportions[0], label_proportions[1], label_proportions[2]], MODEL_TRAIN_EPOCHS, checkpoint_path
+            )
+            is_initial_train = False
