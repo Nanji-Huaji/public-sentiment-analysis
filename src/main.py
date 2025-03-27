@@ -66,30 +66,49 @@ def process_dataset(raw_path: str, data_ratio_begin: float, data_ratio_end: floa
 
 
 def calculate_label_proportions(file_path="data/processed/train.csv"):
-    df = pd.read_csv(file_path)
-    label_counts = df["label"].value_counts(normalize=True) * 100
+    df = pd.read_csv(file_path, on_bad_lines="warn")
+    label_counts = df["label"].value_counts(normalize=True)
     label_proportions = label_counts.to_dict()
 
     for label, proportion in label_proportions.items():
-        print(f"Label {label}: {proportion:.2f}%")
+        print(f"Label {label}: {proportion:.2f}")
     return label_proportions
 
 
-def train_model(data_ratio: list, train_epochs: int, checkpoint_path):
+def train_model(data_ratio: list, train_epochs: int, checkpoint_path: str, conda_env: str = "nlp"):
     """
-    训练模型
-    return: None
+    训练模型，使用指定的 Conda 环境。
+
+    Args:
+        data_ratio (list): 数据比例列表，包含三个介于 0 和 1 之间的浮点数。
+        train_epochs (int): 训练轮数。
+        checkpoint_path (str): 检查点路径。
+        conda_env (str): Conda 环境名称，默认为 "nlp"。
     """
+
+    print("开始训练模型...")
+
+    # 验证 data_ratio 是否包含三个介于 0 和 1 之间的浮点数
+    if len(data_ratio) != 3 or not all(0.0 <= r <= 1.0 for r in data_ratio):
+        raise ValueError("data_ratio 必须是包含三个介于 0 和 1 之间的浮点数的列表。")
+
+    # 调用 subprocess.run 执行训练脚本
     subprocess.run(
         [
+            "conda",
+            "run",
+            "-n",
+            conda_env,  # 指定 Conda 环境
             "python",
-            "train.py",
-            "--data_ratio",
-            data_ratio,
+            "src/train.py",
+            "--class_counts",
+            str(data_ratio[0]),  # 第一个比例
+            str(data_ratio[1]),  # 第二个比例
+            str(data_ratio[2]),  # 第三个比例
             "--train_epochs",
-            train_epochs,
+            str(train_epochs),  # 确保是字符串
             "--checkpoint_path",
-            checkpoint_path,
+            checkpoint_path,  # checkpoint_path 应该是字符串
         ]
     )
 
@@ -217,7 +236,7 @@ def main():
     在运行第一次后删除is_initial_train = True
     """
     is_initial_train = True
-    for dataset in ["EZ-STANCE", "SemEval-2017", "nlpcc", "Weibo-SD", "C-Stance"]:
+    for dataset in ["EZ-STANCE", "nlpcc", "Weibo-SD", "C-Stance"]:
         raw_path = f"data/csv_data/{dataset}"
         processed_path = f"data/processed"
         if is_initial_train:
@@ -233,3 +252,7 @@ def main():
                 [label_proportions[0], label_proportions[1], label_proportions[2]], MODEL_TRAIN_EPOCHS, checkpoint_path
             )
             is_initial_train = False
+
+
+if __name__ == "__main__":
+    main()
