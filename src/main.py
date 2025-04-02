@@ -6,9 +6,12 @@ import pandas as pd
 
 DATASET_INCREASE_ROUND = 10  # 数据集增量轮数
 MODEL_TRAIN_EPOCHS = 10  # 模型训练轮数
+MAX_DATASET_SIZE = 4000  # 最大数据集大小
 
 
-def process_dataset(raw_path: str, data_ratio_begin: float, data_ratio_end: float, processed_path: str):
+def process_dataset(
+    raw_path: str, data_ratio_begin: float, data_ratio_end: float, processed_path: str, cover: bool = False
+):
     """
     从原始数据集中截取指定比例范围的数据，并分别处理 train.csv 和 test.csv，
     将结果写入到目标目录中的 train.csv 和 test.csv。
@@ -26,7 +29,7 @@ def process_dataset(raw_path: str, data_ratio_begin: float, data_ratio_end: floa
     os.makedirs(processed_path, exist_ok=True)
 
     # 定义需要处理的文件
-    files_to_process = ["train.csv", "test.csv"]
+    files_to_process = ["train.csv"]
 
     for file_name in files_to_process:
         raw_file_path = os.path.join(raw_path, file_name)
@@ -57,12 +60,40 @@ def process_dataset(raw_path: str, data_ratio_begin: float, data_ratio_end: floa
         # 将数据写入目标文件
         try:
             # 如果目标文件已存在，则追加；否则创建新文件
-            subset_data.to_csv(
-                processed_file_path, mode="a", index=False, header=not os.path.exists(processed_file_path)
-            )
-            print(f"文件 {file_name} 已成功处理并写入到 {processed_file_path}")
+            if not cover:
+                subset_data.to_csv(
+                    processed_file_path, mode="a", index=False, header=not os.path.exists(processed_file_path)
+                )
+                print(f"文件 {file_name} 已成功处理并写入到 {processed_file_path}")
+            else:
+                subset_data.to_csv(
+                    processed_file_path, mode="w", index=False, header=["text", "target", "label"]  # 添加表头
+                )
+                print(f"文件 {file_name} 已成功覆盖写入到 {processed_file_path}")
         except Exception as e:
             print(f"写入文件 {processed_file_path} 时出错: {e}")
+
+
+def get_data_length(file_path: str) -> int:
+    """
+    获取指定文件的行数（不包括标题行）。
+
+    Args:
+        file_path (str): 文件路径。
+
+    Returns:
+        int: 文件的行数（不包括标题行）。
+    """
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            return len(lines) - 1  # 减去标题行
+    except FileNotFoundError:
+        print(f"文件 {file_path} 不存在。")
+        return 0
+    except Exception as e:
+        print(f"读取文件 {file_path} 时出错: {e}")
+        return 0
 
 
 def calculate_label_proportions(file_path="data/processed/train.csv"):
@@ -245,8 +276,9 @@ def main():
             checkpoint_path = get_best_checkpoint_from_latest_ten("models/output")
         print(f"checkpoint_path: {checkpoint_path}")
         for i in range(DATASET_INCREASE_ROUND):
+            cover = False if (get_data_length("data/processed/train.csv") < MAX_DATASET_SIZE) else True
             data_ratio = [i * 1 / DATASET_INCREASE_ROUND, (i + 1) * 1 / DATASET_INCREASE_ROUND]
-            process_dataset(raw_path, data_ratio[0], data_ratio[1], processed_path)
+            process_dataset(raw_path, data_ratio[0], data_ratio[1], processed_path, cover=cover)
             label_proportions = calculate_label_proportions("data/processed/train.csv")
             train_model(
                 [label_proportions[0], label_proportions[1], label_proportions[2]], MODEL_TRAIN_EPOCHS, checkpoint_path
