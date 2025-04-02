@@ -31,6 +31,19 @@ class StanceDetection:
             "details": {self.id2label[i]: probs[0][i].item() for i in range(len(self.id2label))},
         }
 
+    def raw_classify(self, text, target):
+        inputs = self.tokenizer(
+            text=text, text_pair=target, padding=True, truncation=True, max_length=128, return_tensors="pt"
+        )
+        outputs = self.model(**inputs)
+        probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
+        pred_id = torch.argmax(probs).item()
+        return {
+            "label": self.id2label[pred_id],
+            "score": probs[0][pred_id].item(),
+            "details": {self.id2label[i]: probs[0][i].item() for i in range(len(self.id2label))},
+        }
+
     def __call__(self, text, target):
         return self.classify(text, target)
 

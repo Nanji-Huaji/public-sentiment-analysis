@@ -12,7 +12,7 @@ from inference import StanceDetection, LLMInference, SLMInference
 
 
 class CallModel:
-    def __init__(self):
+    def __init__(self, model):
         pass
 
     def call_crawler_necessary(self, start_time, end_time):
@@ -21,11 +21,10 @@ class CallModel:
     def call_crawler(self, keywords, platform):
         pass
 
-    def process_csv(self):
-        pass
-
-    def call_stance_detection(self, text, target, csv_file):
-        pass
+    def process_csv(self, csv_file):
+        # csv文件中只有text和target两列，用分类器进行分类
+        df = pd.read_csv(csv_file)
+        df = df[["text", "target"]]
 
     def call_slm_llm(self):
         pass
