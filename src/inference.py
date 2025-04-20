@@ -7,7 +7,7 @@ from prompt import *
 
 
 class StanceDetection:
-    def __init__(self, model="models/produce/checkpoint-825", tokenizer="google-bert/bert-base-multilingual-cased"):
+    def __init__(self, model="models/produce/f1-46", tokenizer="google-bert/bert-base-multilingual-cased"):
         self.id2label = {0: "AGAINST", 1: "POSITIVE", 2: "NEITHER"}
         self.label2id = {"AGAINST": 0, "POSITIVE": 1, "NEITHER": 2}
         model = AutoModelForSequenceClassification.from_pretrained(
@@ -58,10 +58,10 @@ class LLMInference:
         self.model = model
         self.api_base = api_base
         self.api_key = api_key
-        openai = openai.OpenAI(api_key=api_key, api_base=api_base, model=model)
+        self.client = openai.OpenAI(api_key=api_key, api_base=api_base, model=model)
 
     def inference(self, text):
-        response = openai.Completion.create(engine=self.model, prompt=text)
+        response = self.client.chat.Completion.create(engine=self.model, prompt=text)
         return response.choices[0].text
 
     def __call__(self, text):

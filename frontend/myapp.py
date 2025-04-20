@@ -11,22 +11,22 @@ from inference import StanceDetection, LLMInference, SLMInference
 # 定义全局变量
 if "stance_detection" not in st.session_state:
     st.session_state.stance_detection = StanceDetection(
-        "models/output/checkpoint-5600", "google-bert/bert-base-multilingual-cased"
+        "models/produce/f1-46", "google-bert/bert-base-multilingual-cased"
     )
 
 # 定义模型
 
 if "gpt_4o" not in st.session_state:
-    st.session_state.gpt_4o = LLMInference("gpt-4o")
+    st.session_state.gpt_4o = LLMInference("gpt-4o", "", "")
 
 if "deepseek_r1" not in st.session_state:
-    st.session_state.deepseek_r1 = LLMInference("deepseek-r1")
+    st.session_state.deepseek_r1 = LLMInference("deepseek-r1", "", "")
 
 if "gpt_35" not in st.session_state:
-    st.session_state.gpt_35 = LLMInference("gpt-3.5")
+    st.session_state.gpt_35 = LLMInference("gpt-3.5", "", "")
 
 if "gpt_3" not in st.session_state:
-    st.session_state.gpt_3 = LLMInference("gpt-3")
+    st.session_state.gpt_3 = LLMInference("gpt-3", "", "")
 
 if "slm" not in st.session_state:
     st.session_state.slm = SLMInference("qwen-2.5b")

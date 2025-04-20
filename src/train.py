@@ -99,7 +99,7 @@ def tokenize_function(dataset):
 
 
 datasets = load_dataset(
-    "csv", data_files={"train": "data/csv_data/VAST/train.csv", "test": "data/csv_data/VAST/test.csv"}
+    "csv", data_files={"train": "data/processed/train.csv", "test": "data/csv_data/Weibo-SD/test.csv"}
 )
 
 tokenized_datasets = datasets.map(tokenize_function, batched=True)
