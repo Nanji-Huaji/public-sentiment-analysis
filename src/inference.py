@@ -1,9 +1,11 @@
+import time
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
 from transformers import BertTokenizer
 import openai
 import torch
 import pandas as pd
 from prompt import *
+from transformers import AutoModelForCausalLM
 
 
 class StanceDetection:
@@ -49,8 +51,11 @@ class StanceDetection:
 
     def process_csv(self, csv_file):
         # 给定csv文件，向这个csv文件中添加一列，列名为stance，内容为对应的stance（0, 1, 2）
-
-        pass
+        df = pd.read_csv(csv_file)
+        stances = list(map(lambda x: self.classify(x[0], x[1]), zip(df["text"], df["target"])))
+        df["stance"] = [stance["label"] for stance in stances]
+        df.to_csv(csv_file, index=False)
+        return df
 
 
 class LLMInference:
@@ -85,18 +90,26 @@ class LLMInference:
 
 
 class SLMInference:
-    def __init__(self, model, api_base, api_key):
-        self.model = model
-        self.api_base = api_base
-        self.api_key = api_key
-        openai = openai.OpenAI(api_key=api_key, api_base=api_base, model=model)
+    def __init__(self, model="Qwen/Qwen2.5-7B-Instruct"):
+        self.model = AutoModelForCausalLM.from_pretrained(model, torch_dtype="auto", device_map="auto")
+        self.tokenizer = AutoTokenizer.from_pretrained(model)
 
-    def inference(self, text):
-        response = openai.Completion.create(engine=self.model, prompt=text)
-        return response.choices[0].text
+    def inference(self, prompt):
+        messages = [
+            {"role": "system", "content": "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."},
+            {"role": "user", "content": prompt},
+        ]
+        text = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        model_inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
+        generated_ids = self.model.generate(**model_inputs, max_new_tokens=512)
+        generated_ids = [
+            output_ids[len(input_ids) :] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+        ]
+        response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+        return response
 
-    def __call__(self, text):
-        return self.inference(text)
+    def __call__(self, prompt):
+        return self.inference(prompt)
 
     def summary(self, favor_text, neutral_text, against_text, target, **kwargs):
         favor_rate = kwargs.get("favor_rate", "未提供")

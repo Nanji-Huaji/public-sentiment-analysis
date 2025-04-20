@@ -9,3 +9,4 @@ logs/google-bert_bert-base-multilingual-cased_3_20250326_164325.log
 logs/errors.csv
 logs/
 logs/errors.csv
+src/__pycache__

@@ -14,6 +14,9 @@ if "stance_detection" not in st.session_state:
         "models/produce/f1-46", "google-bert/bert-base-multilingual-cased"
     )
 
+if "slm" not in st.session_state:
+    st.session_state.slm = SLMInference()
+
 # 定义模型
 
 if "gpt_4o" not in st.session_state:
