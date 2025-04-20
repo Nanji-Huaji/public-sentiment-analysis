@@ -11,7 +11,7 @@ from inference import StanceDetection, LLMInference, SLMInference
 # 定义全局变量
 if "stance_detection" not in st.session_state:
     st.session_state.stance_detection = StanceDetection(
-        "models/output/checkpoint-5600", "google-bert/bert-base-multilingual-cased"
+        "models/produce/f1-46", "google-bert/bert-base-multilingual-cased"
     )
 
 if "slm" not in st.session_state:
@@ -19,17 +19,24 @@ if "slm" not in st.session_state:
 
 # 定义模型
 
-# if "gpt_4o" not in st.session_state:
-#     st.session_state.gpt_4o = LLMInference("gpt-4o")
+if "gpt_4o" not in st.session_state:
+    st.session_state.gpt_4o = LLMInference("gpt-4o", "", "")
 
-# if "deepseek_r1" not in st.session_state:
-#     st.session_state.deepseek_r1 = LLMInference("deepseek-r1")
+if "deepseek_r1" not in st.session_state:
+    st.session_state.deepseek_r1 = LLMInference("deepseek-r1", "", "")
 
-# if "gpt_35" not in st.session_state:
-#     st.session_state.gpt_35 = LLMInference("gpt-3.5")
+if "gpt_35" not in st.session_state:
+    st.session_state.gpt_35 = LLMInference("gpt-3.5", "", "")
 
-# if "gpt_3" not in st.session_state:
-#     st.session_state.gpt_3 = LLMInference("gpt-3")
+if "gpt_3" not in st.session_state:
+    st.session_state.gpt_3 = LLMInference("gpt-3", "", "")
+
+if "slm" not in st.session_state:
+    st.session_state.slm = SLMInference("qwen-2.5b")
+
+
+def call_crawler(**kwargs) -> str:
+    pass
 
 
 def draw_pie_chart(pos, neg, neu):
@@ -42,6 +49,38 @@ def draw_pie_chart(pos, neg, neu):
     ax.pie(sizes, explode=explode, labels=labels, colors=colors, autopct="%1.1f%%", shadow=True, startangle=90)
     ax.axis("equal")
     return fig
+
+
+def process_csv(file_path, stance_detection):
+    """
+    Args:
+        file_path (str): CSV 文件路径。
+        stance_detection (callable): 接受 text 和 target 的函数，返回包含 label 的字典。
+    """
+    # 读取 CSV 文件
+    df = pd.read_csv(file_path)
+
+    # 检查是否存在 label 列，如果不存在则新增
+    if "label" not in df.columns:
+        df["label"] = None
+
+    # 定义标签映射规则
+    label_mapping = {"POSITIVE": 1, "NEGATIVE": 0, "NEUTRAL": 2}
+
+    def map_stance(row):
+        result = stance_detection(row["text"], row["target"])
+        return label_mapping.get(result["label"], None)
+
+    # 应用 map 函数更新 label 列
+    df["label"] = df.apply(map_stance, axis=1)
+
+    # 将处理后的数据写回文件
+    df.to_csv(file_path, index=False)
+    print(f"文件 {file_path} 已成功处理并保存。")
+
+    # 将处理后的数据写回文件
+    df.to_csv(file_path, index=False)
+    print(f"文件 {file_path} 已成功处理并保存。")
 
 
 # with st.sidebar:
@@ -90,16 +129,71 @@ llm_used = st.selectbox("Select a language model", ["No LLM used", "GPT-4o", "De
 
 if st.button("Monitor"):
 
-    fig = draw_pie_chart(0.87, 0.05, 0.08)
+    data_file = call_crawler(
+        topic=topic, target=target, keyword_monitoring=keyword_monitoring, platform=platform, date_range=date_range
+    )
+    if data_file is None:
+        data_file = "analysis/demo.csv"
+
+    # 处理 CSV 文件
+    process_csv(data_file, stance_detection)
+    # 获取process_csv处理后的label列的占比
+    df = pd.read_csv(data_file)
+    label_counts = df["label"].value_counts(normalize=True)
+    label_counts = label_counts.reindex([1, 0, 2], fill_value=0)  # 确保顺序为 POSITIVE, NEGATIVE, NEUTRAL
+    pos_ratio = label_counts[1]
+    neg_ratio = label_counts[0]
+    neu_ratio = label_counts[2]
+    # 绘制饼图
+    fig = draw_pie_chart(pos_ratio, neg_ratio, neu_ratio)
     st.pyplot(fig)
-    corrent_content = """
-Lorem ipsum dolor sit amet, vix error numquam ad. At sed paulo voluptatum, vix dicit soluta fuisset et. Veniam integre luptatum est no, ne ius percipit singulis. Mandamus urbanitas id eam, qui in mazim homero appetere. No porro clita graece eos, doming gubergren similique et mei. Vix et volumus abhorreant, an quot persius delenit has, vide contentiones ne quo.
-Ad officiis invenire sed, liber patrioque sadipscing pri no, interesset consequuntur an eam. Eu iuvaret nostrum has, quo id possit reprimique. Te iriure imperdiet deterruisset est, quot mutat id eos, est an malorum debitis intellegebat. Id diceret praesent maluisset vis, sit mucius deleniti ex. An vix vide posse iisque, quo assum aliquip an.
-Suas senserit accusamus vis ut, usu blandit eloquentiam necessitatibus cu, an denique oportere vel. Eu quis corpora iracundia vis, habemus civibus at eam. Dolor persius an sea, forensibus abhorreant repudiandae his et. Et usu graece admodum. Ex ignota maiorum ullamcorper usu.
-Ea mea nihil menandri principes. Mucius apeirian abhorreant vim id, mei suas error meliore eu. Eu his praesent qualisque. Vis minim dictas ex, mel ut stet ferri nominavi. Ex vix ubique alterum epicuri, quis delenit referrentur vim id, duo timeam inermis tacimates cu.
-Qui nonumes reprehendunt ad, his tollit everti accommodare ne, ne oblique ornatus mea. Ut pro facer utroque salutatus, duo ut illum dicunt oblique. Ad adhuc errem platonem has, ex his agam mundi vocibus, eu qui eius semper. Ei eum atomorum accommodare, ex noster accusam pri, cu impedit civibus definiebas nam. Ne mel autem ullum tempor, ex duo zril quaestio, ea diam feugait quaestio cum.
-"""
+    if llm_used != "No LLM used":
+        st.markdown("### LLM's analysis:")
+        if llm_used == "GPT-4o":
+            llm = st.session_state.gpt_4o
+        elif llm_used == "DeepSeek-r1":
+            llm = st.session_state.deepseek_r1
+        elif llm_used == "GPT-3.5":
+            llm = st.session_state.gpt_35
+        elif llm_used == "GPT-3":
+            llm = st.session_state.gpt_3
+
+        # 调用小模型，抽样总结
+
+        df = pd.read_csv(data_file)
+        # 由于target要求保持一致，取出数据集中的第一个target
+        target = df["target"].iloc[0]
+        # 从 df 中各抽取 20 条标签为 0、1、2 的数据，并存储为字典
+        sampled_data_dict = {
+            0: df[df["label"] == 0]
+            .sample(n=20, random_state=42, replace=True)
+            .reset_index(drop=True),  # 标签为 0 的数据
+            1: df[df["label"] == 1]
+            .sample(n=20, random_state=42, replace=True)
+            .reset_index(drop=True),  # 标签为 1 的数据
+            2: df[df["label"] == 2]
+            .sample(n=20, random_state=42, replace=True)
+            .reset_index(drop=True),  # 标签为 2 的数据
+        }
+
+        sampled_data_list = [sampled_data_dict[0], sampled_data_dict[1], sampled_data_dict[2]]
+
+        slm_summary = st.session_state.slm.summary(
+            favor_text=sampled_data_list[1],
+            neutral_text=sampled_data_list[2],
+            against_text=sampled_data_list[0],
+            target=target,
+        )
+
+        llm_inference = llm.analyze(
+            summary=slm_summary,
+            target=target,
+            topic=topic,
+            favor_rate=pos_ratio,
+            against_rate=neg_ratio,
+            neutral_rate=neu_ratio,
+        )
 
     if llm_used != "No LLM used":
         st.markdown("### LLM's anlysis:")
-        st.markdown(f"{corrent_content}")
+        st.markdown(llm_inference)

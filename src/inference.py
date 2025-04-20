@@ -9,7 +9,7 @@ from transformers import AutoModelForCausalLM
 
 
 class StanceDetection:
-    def __init__(self, model="models/produce/checkpoint-825", tokenizer="google-bert/bert-base-multilingual-cased"):
+    def __init__(self, model="models/produce/f1-46", tokenizer="google-bert/bert-base-multilingual-cased"):
         self.id2label = {0: "AGAINST", 1: "POSITIVE", 2: "NEITHER"}
         self.label2id = {"AGAINST": 0, "POSITIVE": 1, "NEITHER": 2}
         model = AutoModelForSequenceClassification.from_pretrained(
@@ -21,6 +21,19 @@ class StanceDetection:
         self.tokenizer = tokenizer
 
     def classify(self, text, target):
+        inputs = self.tokenizer(
+            text=text, text_pair=target, padding=True, truncation=True, max_length=128, return_tensors="pt"
+        )
+        outputs = self.model(**inputs)
+        probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
+        pred_id = torch.argmax(probs).item()
+        return {
+            "label": self.id2label[pred_id],
+            "score": probs[0][pred_id].item(),
+            "details": {self.id2label[i]: probs[0][i].item() for i in range(len(self.id2label))},
+        }
+
+    def raw_classify(self, text, target):
         inputs = self.tokenizer(
             text=text, text_pair=target, padding=True, truncation=True, max_length=128, return_tensors="pt"
         )
@@ -50,10 +63,10 @@ class LLMInference:
         self.model = model
         self.api_base = api_base
         self.api_key = api_key
-        openai = openai.OpenAI(api_key=api_key, api_base=api_base, model=model)
+        self.client = openai.OpenAI(api_key=api_key, api_base=api_base, model=model)
 
     def inference(self, text):
-        response = openai.Completion.create(engine=self.model, prompt=text)
+        response = self.client.chat.Completion.create(engine=self.model, prompt=text)
         return response.choices[0].text
 
     def __call__(self, text):
