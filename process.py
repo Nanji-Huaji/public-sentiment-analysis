@@ -27,6 +27,7 @@ def process_vast(original_train_file, original_test_file):
         save_file = train_csv if "train" in file else test_csv
         processed_df.to_csv(save_file, mode="a", header=False, index=False)
 
+    # process_table(original_train_file)
     for file in [original_train_file, original_test_file]:
         process_table(file)
 
@@ -47,6 +48,7 @@ def process_weibo_sd(original_train_file, original_test_file):
         save_file = train_csv if "train" in file else test_csv
         processed_df.to_csv(save_file, mode="a", header=False, index=False)
 
+    # process_json_file(original_train_file)
     for file in [original_train_file, original_test_file]:
         process_json_file(file)
 

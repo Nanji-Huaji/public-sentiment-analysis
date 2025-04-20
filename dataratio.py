@@ -8,9 +8,9 @@ def calculate_label_proportions(file_path):
 
     for label, proportion in label_proportions.items():
         print(f"Label {label}: {proportion:.2f}%")
-    return label_proportions.values()
+    return label_proportions
 
 
 if __name__ == "__main__":
-    file_path = "data/processed/train.csv"
+    file_path = "data/csv_data/VAST/train.csv"
     calculate_label_proportions(file_path)
