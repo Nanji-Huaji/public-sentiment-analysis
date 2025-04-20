@@ -4,3 +4,4 @@ train.log
 src/__pycache__/evaluate.cpython-312.pyc
 src/__pycache__/prompt.cpython-312.pyc
 src/__pycache__/inference.cpython-312.pyc
+logs/
