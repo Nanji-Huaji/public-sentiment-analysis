@@ -63,11 +63,11 @@ class LLMInference:
         self.model = model
         self.api_base = api_base
         self.api_key = api_key
-        self.client = openai.OpenAI(api_key=api_key, api_base=api_base, model=model)
+        self.client = openai.OpenAI(api_key=api_key, base_url=api_base)
 
     def inference(self, text):
-        response = self.client.chat.Completion.create(engine=self.model, prompt=text)
-        return response.choices[0].text
+        response = self.client.chat.completions.create(model=self.model, messages=[{"role": "user", "content": text}])
+        return response.choices[0].message.content
 
     def __call__(self, text):
         return self.inference(text)

@@ -11,7 +11,7 @@ from inference import StanceDetection, LLMInference, SLMInference
 # 定义全局变量
 if "stance_detection" not in st.session_state:
     st.session_state.stance_detection = StanceDetection(
-        "models/produce/f1-46", "google-bert/bert-base-multilingual-cased"
+        "models/produce/checkpoint-825", "google-bert/bert-base-multilingual-cased"
     )
 
 if "slm" not in st.session_state:

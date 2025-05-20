@@ -38,7 +38,7 @@ class CallModel:
     def call_slm_llm(self):
         pass
 
-    def lcut_with_filter(text: str, stop_word_file) -> list:
+    def lcut_with_filter(self, text: str, stop_word_file: str) -> list:
         with open(stop_word_file, "r") as f:
             stop_word = set(map(lambda word: word.strip(), f.readlines()))
         words = jieba.lcut(text)
