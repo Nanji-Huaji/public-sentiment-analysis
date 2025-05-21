@@ -4,7 +4,7 @@ from transformers import BertTokenizer
 import openai
 import torch
 import pandas as pd
-from .prompt import *
+from prompt import *
 from transformers import AutoModelForCausalLM
 
 
@@ -59,6 +59,8 @@ class LLMInference:
 
     def inference(self, text):
         response = self.client.chat.completions.create(model=self.model, messages=[{"role": "user", "content": text}])
+        print("响应为：")
+        print(response)
         return response.choices[0].message.content
 
     def __call__(self, text):
@@ -120,3 +122,10 @@ class SLMInference:
         )
         summary = self.inference(prompt)
         return summary
+
+if __name__ == "__main__":
+    import os
+    llm = LLMInference(
+        model="gpt-4o", api_base="https://api.bltcy.ai/v1", api_key=os.getenv("OPENAI_PUBLIC_SENTIMENT_SYSTEM_API_KEY")
+    )
+    print(llm.inference("test"))

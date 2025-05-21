@@ -4,11 +4,14 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from utils import draw_pie_chart, cut_text, cut_text_from_csv, get_top_words, get_top_words_from_csv, draw_wordcloud, draw_heatmap
+
+import collections
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 from inference import StanceDetection, LLMInference, SLMInference
 
-from .utils import draw_pie_chart
+
 
 # 定义全局变量
 if "stance_detection" not in st.session_state:
@@ -20,7 +23,7 @@ if "stance_detection" not in st.session_state:
 llm_configs = {
     "gpt_4o": {
         "name": "gpt-4o",
-        "api_base": "https://api.bltcy.ai",
+        "api_base": "https://api.bltcy.ai/v1",
         "api_key": os.getenv("OPENAI_PUBLIC_SENTIMENT_SYSTEM_API_KEY"),
     },
     "deepseek_r1": {
@@ -30,12 +33,12 @@ llm_configs = {
     },
     "gpt_35": {
         "name": "gpt-3.5",
-        "api_base": "https://api.bltcy.ai",
+        "api_base": "https://api.bltcy.ai/v1",
         "api_key": os.getenv("OPENAI_PUBLIC_SENTIMENT_SYSTEM_API_KEY"),
     },
     "gpt_3": {
         "name": "gpt-3",
-        "api_base": "https://api.bltcy.ai",
+        "api_base": "https://api.bltcy.ai/v1",
         "api_key": os.getenv("OPENAI_PUBLIC_SENTIMENT_SYSTEM_API_KEY"),
     },
 }
@@ -52,7 +55,7 @@ if "slm" not in st.session_state:
 
 
 def call_crawler(**kwargs) -> str:
-    return "analysis/demo.csv"
+    return "data/analysis/demo.csv"
 
 
 st.title("公共舆情分析系统")
@@ -81,11 +84,11 @@ st.markdown(
 st.markdown("您可以使用大语言模型来帮助监测公众舆论的情感倾向。")
 st.markdown("请注意，大语言模型可能存在偏见和幻觉问题，其生成的内容可能不够可靠。")
 
-topic = st.text_input("输入您想要监测的主题", "两会提出的政策")
+topic = st.text_input("输入您想要监测的主题", "胡鑫宇，满江红，泼水节")
 target = st.text_input("输入您想要监测的目标", "政府")
-keyword_monitoring = st.text_input("输入您想要检索的帖子关键词，用逗号分隔", "两会, 北京, 政府")
+keyword_monitoring = st.text_input("输入您想要检索的帖子关键词，用逗号分隔", "胡鑫宇, 满江红, 泼水节")
 platform = st.selectbox("选择社交媒体平台", ["Weibo", "RedNote", "Tieba"])
-date_range = st.date_input("选择日期范围", [pd.to_datetime("2025-03-01"), pd.to_datetime("2025-03-10")])
+date_range = st.date_input("选择日期范围", [pd.to_datetime("2023-01-01"), pd.to_datetime("2025-03-10")])
 llm_used = st.selectbox("选择语言模型", ["不使用LLM", "GPT-4o", "DeepSeek-r1", "GPT-3.5", "GPT-3"])
 
 
@@ -106,10 +109,24 @@ if st.button("开始监测"):
     pos_ratio = label_counts[1]
     neg_ratio = label_counts[0]
     neu_ratio = label_counts[2]
+    # 处理文本
+    word_list = cut_text_from_csv(data_file, "text")
+    word_count = collections.Counter(word_list)
+    word_dict = dict(word_count.most_common(100))
     # 绘制饼图
-    fig = draw_pie_chart(pos_ratio, neg_ratio, neu_ratio)
-    st.pyplot(fig)
-    if llm_used != "No LLM used":
+    st.markdown("### 情感倾向饼图：")
+    st.markdown(f"正面情感占比：{pos_ratio:.2%}，负面情感占比：{neg_ratio:.2%}，中立情感占比：{neu_ratio:.2%}")
+    pie_fig = draw_pie_chart(pos_ratio, neg_ratio, neu_ratio)
+    st.pyplot(pie_fig)
+    # 绘制词云
+    st.markdown("### 词云图：")
+    wordcloud_fig = draw_wordcloud(word_dict)
+    st.pyplot(wordcloud_fig)
+    # 绘制热力图
+    st.markdown("### 热力图：")
+    heatmap_fig = draw_heatmap(word_dict)
+    st.pyplot(heatmap_fig)
+    if llm_used != "不使用LLM":
         st.markdown("### LLM's analysis:")
         # 将模型名称映射到session_state中的键名
         model_map = {"GPT-4o": "gpt_4o", "DeepSeek-r1": "deepseek_r1", "GPT-3.5": "gpt_35", "GPT-3": "gpt_3"}
@@ -139,6 +156,9 @@ if st.button("开始监测"):
             neutral_text=sampled_data_list[2],
             against_text=sampled_data_list[0],
             target=target,
+            favor_rate=pos_ratio,
+            against_rate=neg_ratio,
+            neutral_rate=neu_ratio,
         )
 
         # 调用大模型，分析总结
@@ -151,6 +171,8 @@ if st.button("开始监测"):
             neutral_rate=neu_ratio,
         )
 
-    if llm_used != "不使用LLM":
+        st.markdown("### LLM分析摘要：")
+        st.markdown(slm_summary)
+
         st.markdown("### LLM分析结果：")
         st.markdown(llm_inference)
