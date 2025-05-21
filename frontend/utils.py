@@ -10,6 +10,7 @@ import wordcloud
 
 import os
 
+
 def draw_pie_chart(pos, neg, neu):
     ratio = {"positive": pos, "negative": neg, "neutral": neu}
     labels = list(ratio.keys())
@@ -20,6 +21,7 @@ def draw_pie_chart(pos, neg, neu):
     ax.pie(sizes, explode=explode, labels=labels, colors=colors, autopct="%1.1f%%", shadow=True, startangle=90)
     ax.axis("equal")
     return fig
+
 
 def cut_text(text: str, stopword: str) -> list:
     """
@@ -38,7 +40,8 @@ def cut_text(text: str, stopword: str) -> list:
     words = list(filter(lambda x: x not in stopwords and x.strip() != "", words))
     return words
 
-def cut_text_from_csv(csv_file: str, text_column: str, stopword: str="frontend/data/stopwords.txt") -> list:
+
+def cut_text_from_csv(csv_file: str, text_column: str, stopword: str = "frontend/data/stopwords.txt") -> list:
     """
     从csv文件中读取文本，进行分词，并去除停用词
     :param csv_file: csv文件路径
@@ -51,7 +54,8 @@ def cut_text_from_csv(csv_file: str, text_column: str, stopword: str="frontend/d
     words = cut_text(text, stopword)
     return words
 
-def get_top_words(word_list: list, top_n: int=10) -> dict:
+
+def get_top_words(word_list: list, top_n: int = 10) -> dict:
     """
     获取词频最高的前n个词
     :param word_list: 词汇列表
@@ -62,7 +66,10 @@ def get_top_words(word_list: list, top_n: int=10) -> dict:
     top_words = dict(word_count.most_common(top_n))
     return top_words
 
-def get_top_words_from_csv(csv_file: str, text_column: str, stopword: str="frontend/data/stopwords.txt", top_n :int=10) -> dict:
+
+def get_top_words_from_csv(
+    csv_file: str, text_column: str, stopword: str = "frontend/data/stopwords.txt", top_n: int = 10
+) -> dict:
     """
     从csv文件中获取词频最高的前n个词
     :param csv_file: csv文件路径
@@ -77,9 +84,15 @@ def get_top_words_from_csv(csv_file: str, text_column: str, stopword: str="front
     top_words = get_top_words(words, top_n)
     return top_words
 
-def draw_wordcloud(word_dict: dict, width: int=800, height: int=400, 
-                  background_color: str="white", max_words: int=200, 
-                  font_path: str="frontend/data/fonts/SourceHanSansHWSC-Regular.otf"):
+
+def draw_wordcloud(
+    word_dict: dict,
+    width: int = 800,
+    height: int = 400,
+    background_color: str = "white",
+    max_words: int = 200,
+    font_path: str = "frontend/data/fonts/SourceHanSansHWSC-Regular.otf",
+):
     """
     绘制词云图
     :param word_dict: 词频字典，键为词，值为频率
@@ -90,37 +103,38 @@ def draw_wordcloud(word_dict: dict, width: int=800, height: int=400,
     :param font_path: 字体路径，中文词云需要指定中文字体
     :return: matplotlib图像对象
     """
-    try:
-        # 创建词云对象
-        wc = wordcloud.WordCloud(
-            width=width,
-            height=height,
-            background_color=background_color,
-            max_words=max_words,
-            font_path=font_path,
-            random_state=42
-        )
-        
-        # 将字典转换为文本形式
-        text = " ".join([f"{word} " * int(freq) for word, freq in word_dict.items()])
-        
-        # 使用generate方法替代generate_from_frequencies
-        wc.generate(text)
-        
-        # 创建图像
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.imshow(wc, interpolation='bilinear')
-        ax.axis("off")
-        
-        return fig
-    except ValueError as e:
-        if "anchor not supported" in str(e):
-            print("检测到Pillow版本兼容性问题。请尝试: pip install pillow==9.5.0")
-        raise e
+    # 创建词云对象
+    wc = wordcloud.WordCloud(
+        width=width,
+        height=height,
+        background_color=background_color,
+        max_words=max_words,
+        font_path=font_path,
+        random_state=42,
+    )
 
-def draw_heatmap(word_dict: dict, figsize: tuple=(10, 8), cmap: str="YlOrRd", 
-                title: str="词频热力图", annot: bool=True,
-                font_path: str="frontend/data/fonts/SourceHanSansHWSC-Regular.otf"):
+    # 将字典转换为文本形式
+    text = " ".join([f"{word} " * int(freq) for word, freq in word_dict.items()])
+
+    # 使用generate方法替代generate_from_frequencies
+    wc.generate(text)
+
+    # 创建图像
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.imshow(wc, interpolation="bilinear")
+    ax.axis("off")
+
+    return fig
+
+
+def draw_heatmap(
+    word_dict: dict,
+    figsize: tuple = (10, 8),
+    cmap: str = "YlOrRd",
+    title: str = "词频热力图",
+    annot: bool = True,
+    font_path: str = "frontend/data/fonts/SourceHanSansHWSC-Regular.otf",
+):
     """
     根据词频绘制矩阵形式的热力图
     :param word_dict: 词频字典，键为词，值为频率
@@ -133,47 +147,48 @@ def draw_heatmap(word_dict: dict, figsize: tuple=(10, 8), cmap: str="YlOrRd",
     """
     # 设置中文字体
     from matplotlib.font_manager import FontProperties
+
     if font_path and os.path.exists(font_path):
         font_prop = FontProperties(fname=font_path)
-        plt.rcParams['font.family'] = font_prop.get_name()
+        plt.rcParams["font.family"] = font_prop.get_name()
     else:
         # 尝试使用系统中文字体
-        plt.rcParams['font.sans-serif'] = ['SimHei', 'SimSun', 'Arial Unicode MS']
-        plt.rcParams['axes.unicode_minus'] = False
+        plt.rcParams["font.sans-serif"] = ["SimHei", "SimSun", "Arial Unicode MS"]
+        plt.rcParams["axes.unicode_minus"] = False
 
     # 如果词典太大，只取前25个
     if len(word_dict) > 25:
         word_dict = dict(sorted(word_dict.items(), key=lambda x: x[1], reverse=True)[:25])
-    
+
     # 创建数据
     words = list(word_dict.keys())
     frequencies = list(word_dict.values())
-    
+
     # 计算矩阵的行列数（尽量接近方形）
     n = len(words)
     grid_size = int(np.ceil(np.sqrt(n)))
-    
+
     # 创建矩阵并填充词频数据
     matrix = np.zeros((grid_size, grid_size))
     for i in range(n):
         row = i // grid_size
         col = i % grid_size
         matrix[row, col] = frequencies[i]
-    
+
     # 创建图像
     fig, ax = plt.subplots(figsize=figsize)
-    
+
     # 绘制热力图
     im = ax.imshow(matrix, cmap=cmap)
-    
+
     # 添加颜色条
     cbar = ax.figure.colorbar(im, ax=ax)
-    cbar.ax.set_ylabel("词频", rotation=-90, va="bottom", fontproperties=font_prop if 'font_prop' in locals() else None)
-    
+    cbar.ax.set_ylabel("词频", rotation=-90, va="bottom", fontproperties=font_prop if "font_prop" in locals() else None)
+
     # 设置坐标轴刻度
     ax.set_xticks(np.arange(grid_size))
     ax.set_yticks(np.arange(grid_size))
-    
+
     # 准备x和y轴的标签
     x_labels = []
     y_labels = []
@@ -192,15 +207,15 @@ def draw_heatmap(word_dict: dict, figsize: tuple=(10, 8), cmap: str="YlOrRd",
         y_labels.append(y_row[0] if y_row[0] else "")
         # 每列只显示第一个词
         x_labels.append(x_col[0] if x_col[0] else "")
-    
+
     # 设置坐标轴标签
-    if 'font_prop' in locals():
+    if "font_prop" in locals():
         ax.set_xticklabels(x_labels, fontproperties=font_prop)
         ax.set_yticklabels(y_labels, fontproperties=font_prop)
     else:
         ax.set_xticklabels(x_labels)
         ax.set_yticklabels(y_labels)
-    
+
     # 在热力图中标注数值和词汇
     if annot:
         for i in range(grid_size):
@@ -211,15 +226,22 @@ def draw_heatmap(word_dict: dict, figsize: tuple=(10, 8), cmap: str="YlOrRd",
                     freq = frequencies[idx]
                     # 根据背景色选择文字颜色，确保可读性
                     color = "white" if freq > max(frequencies) * 0.5 else "black"
-                    ax.text(j, i, f"{word}\n{freq}", ha="center", va="center", color=color,
-                           fontproperties=font_prop if 'font_prop' in locals() else None)
-    
+                    ax.text(
+                        j,
+                        i,
+                        f"{word}\n{freq}",
+                        ha="center",
+                        va="center",
+                        color=color,
+                        fontproperties=font_prop if "font_prop" in locals() else None,
+                    )
+
     # 设置标题和调整布局
-    if 'font_prop' in locals():
+    if "font_prop" in locals():
         ax.set_title(title, fontproperties=font_prop)
     else:
         ax.set_title(title)
-    
+
     fig.tight_layout()
-    
+
     return fig

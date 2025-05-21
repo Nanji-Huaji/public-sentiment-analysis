@@ -2,11 +2,11 @@ import json
 import torch
 from transformers import AdamW
 from transformers.optimization import get_scheduler
-from transformers import BertTokenizer
+from transformers.models.bert import BertTokenizer
 from datasets import load_dataset
 import numpy as np
-from transformers import AutoModelForSequenceClassification
-from transformers import TrainingArguments, Trainer
+from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
+from transformers.training_args import TrainingArguments, Trainer
 from sklearn.metrics import f1_score
 from torch.nn import CrossEntropyLoss
 import pandas as pd
@@ -15,7 +15,7 @@ import argparse
 
 import logging
 from datetime import datetime
-from utils import Logger
+from logger import Logger
 import sys
 
 import os

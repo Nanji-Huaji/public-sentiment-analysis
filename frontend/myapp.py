@@ -4,13 +4,20 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from utils import draw_pie_chart, cut_text, cut_text_from_csv, get_top_words, get_top_words_from_csv, draw_wordcloud, draw_heatmap
+from utils import (
+    draw_pie_chart,
+    cut_text,
+    cut_text_from_csv,
+    get_top_words,
+    get_top_words_from_csv,
+    draw_wordcloud,
+    draw_heatmap,
+)
 
 import collections
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 from inference import StanceDetection, LLMInference, SLMInference
-
 
 
 # 定义全局变量
@@ -64,14 +71,14 @@ stance_detection = st.session_state.stance_detection
 
 st.markdown("这是一个简单的演示立场检测的demo。" "给定一个句子和一个目标，我们会告诉您该句子对目标的情感倾向。")
 
-sentence = st.text_input("Enter a sentence", "I feel great")
-target = st.text_input("Enter a target you want to analyze", "I")
+sentence = st.text_input("输入一个句子", "I feel great")
+target = st.text_input("输入一个你要检测的目标", "I")
 
-if st.button("Analyze"):
-    st.write(f"Analyzing: {sentence}")
+if st.button("分析"):
+    st.write(f"分析: {sentence}")
     stance = stance_detection(sentence, target)
-    st.write(f"Sentiment: {stance['label']}")
-    st.write(f"Confidence: {stance['score']}")
+    st.write(f"情感: {stance['label']}")
+    st.write(f"置信度: {stance['score']}")
 
 st.title("公共舆情监控")
 
@@ -120,14 +127,16 @@ if st.button("开始监测"):
     st.pyplot(pie_fig)
     # 绘制词云
     st.markdown("### 词云图：")
+    st.markdown("词云图展示了文本中最常见的单词，单词的大小表示其出现的频率。")
     wordcloud_fig = draw_wordcloud(word_dict)
     st.pyplot(wordcloud_fig)
     # 绘制热力图
     st.markdown("### 热力图：")
+    st.markdown("热力图展示了文本中单词之间的共现关系，颜色越深表示共现次数越多。")
     heatmap_fig = draw_heatmap(word_dict)
     st.pyplot(heatmap_fig)
     if llm_used != "不使用LLM":
-        st.markdown("### LLM's analysis:")
+        st.markdown("### LLM分析:")
         # 将模型名称映射到session_state中的键名
         model_map = {"GPT-4o": "gpt_4o", "DeepSeek-r1": "deepseek_r1", "GPT-3.5": "gpt_35", "GPT-3": "gpt_3"}
         llm = st.session_state[model_map[llm_used]]
