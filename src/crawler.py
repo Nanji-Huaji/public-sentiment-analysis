@@ -1,9 +1,12 @@
+import pandas as pd
+
+
 class Crawler:
     def __init__(self, platform):
         pass
 
     def config(self) -> None:
-        """
-        Configure the crawler with the necessary settings.
-        """
+        pass
+
+    def crawling_data(self):
         pass
