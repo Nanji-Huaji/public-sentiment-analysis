@@ -6,6 +6,10 @@ import sys
 from types import ModuleType
 from typing import Any, Dict, List
 
+import json
+
+import os
+
 _PROJECT_ROOT = pathlib.Path(__file__).resolve().parent / "MediaCrawler"
 
 
@@ -14,7 +18,7 @@ class MediaCrawler:
         self,
         platform: str,
         keywords: List[str],
-        time: float = 30.0,
+        time: int = 30,
         max_crawl_note: int = 50,
         **kwargs,
     ):
@@ -24,11 +28,10 @@ class MediaCrawler:
             "PLATFORM": platform,
             "KEYWORDS": ",".join(self.keywords),
             "CRAWLER_TYPE": "search",
-            "SAVE_DATA_OPTION": "json",
+            "SAVE_DATA_OPTION": "csv",
             "HEADLESS": True,
             "ENABLE_GET_COMMENTS": True,
             "MAX_CONCURRENCY_NUM": 1,
-            "TIMEOUT": time,
             "MAX_CRAWL_NOTE": max_crawl_note,
         }
         self.configure(**kwargs)
@@ -36,22 +39,22 @@ class MediaCrawler:
     def configure(self, **kwargs) -> None:
         """在运行前动态更新配置"""
         for k, v in kwargs.items():
-            self.config[k.upper()] = v  # 统一转成大写，方便与 base_config 对应
+            self.config[k.upper()] = v
 
-    def crawl(self, login_type: str = "qrcode", **kwargs) -> str | None:
+    def crawl(self, login_type: str = "qrcode", **kwargs) -> dict | None:
         """真正启动爬虫；默认扫码登录"""
         if kwargs:
             self.configure(**kwargs)
         self._apply_config_to_module()  # 1. 把参数写回 base_config.py
         return self._run_main_py(login_type)  # 2. 执行 main.py
 
-    def __call__(self, *args, **kwargs) -> str | None:  # 语法糖
+    def __call__(self, *args, **kwargs) -> dict | None:
         return self.crawl(*args, **kwargs)
 
     def get_crawler_type(self) -> str:
         return self.config.get("CRAWLER_TYPE", "search")
 
-    def run_file(self, file_path: str) -> str | None:
+    def run_file(self, file_path: str):
         """如果你想直接执行 MediaCrawler 里任何单独脚本，可用该方法"""
         self._apply_config_to_module()
         return runpy.run_path(file_path)  # 返回脚本的 globals()
@@ -64,9 +67,14 @@ class MediaCrawler:
             setattr(base_cfg, k, v)  # 动态写回
         importlib.reload(base_cfg)  # 防止重复 import 不生效
 
-    def _run_main_py(self, login_type: str) -> str | None:
+    def _run_main_py(self, login_type: str) -> dict | None:
+        RESULT_PREFIX = "@@RESULT@@ "
         cmd = [
-            sys.executable,
+            "conda",
+            "run",
+            "-n",
+            "media_crawler",
+            "python",
             str(_PROJECT_ROOT / "main.py"),
             "--platform",
             self.platform,
@@ -75,8 +83,33 @@ class MediaCrawler:
             "--type",
             self.get_crawler_type(),
         ]
-        # 进一步的启动参数（如 --save json）可在这里追加
         completed = subprocess.run(cmd, capture_output=True, text=True)
+        # 1. 先把非结果的日志原样打印出来（可选）
+        for line in completed.stdout.splitlines():
+            if not line.startswith(RESULT_PREFIX):
+                print(line)
+        # 2. 判断退出码
         if completed.returncode != 0:
             raise RuntimeError(completed.stderr)
-        return completed.stdout  # 或者返回数据文件路径
+
+        # 3. 抓取带前缀的那一行
+        result_line = next(
+            (
+                line[len(RESULT_PREFIX) :].strip()
+                for line in completed.stdout.splitlines()
+                if line.startswith(RESULT_PREFIX)
+            ),
+            None,
+        )
+        return json.loads(result_line) if result_line else None
+
+    @staticmethod
+    def get_valid_csv_file_path(csv_dict: dict) -> list | None:
+        return_list = []
+        for save_type, save_file_path in csv_dict.items():
+            if os.path.exists(save_file_path):
+                return_list.append(save_file_path)
+        if return_list:
+            return return_list
+        else:
+            return None

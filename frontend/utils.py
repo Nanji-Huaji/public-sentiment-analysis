@@ -245,3 +245,45 @@ def draw_heatmap(
     fig.tight_layout()
 
     return fig
+
+
+def merge_csv_files(input_files: list, output_file: str):
+    """
+    合并多个CSV文件
+    :param input_files: 输入的CSV文件列表
+    :param output_file: 输出的合并后的CSV文件路径
+    """
+    # 检查输入参数
+    if not input_files:
+        raise ValueError("输入文件列表不能为空")
+
+    # 用于存储所有数据框的列表
+    dfs = []
+
+    # 读取所有CSV文件
+    for file in input_files:
+        if os.path.exists(file):
+            try:
+                df = pd.read_csv(file)
+                dfs.append(df)
+            except Exception as e:
+                print(f"读取文件 {file} 时出错: {e}")
+        else:
+            print(f"文件不存在: {file}")
+
+    if not dfs:
+        raise ValueError("没有可合并的有效CSV文件")
+
+    # 合并所有数据框
+    # pd.concat会自动处理同名列的合并
+    merged_df = pd.concat(dfs, ignore_index=True)
+
+    # 确保输出目录存在
+    output_dir = os.path.dirname(output_file)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # 保存合并后的数据框
+    merged_df.to_csv(output_file, index=False)
+
+    print(f"已将 {len(dfs)} 个CSV文件合并保存至 {output_file}")

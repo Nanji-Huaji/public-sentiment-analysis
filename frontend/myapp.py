@@ -18,7 +18,7 @@ import collections
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 from inference import StanceDetection, LLMInference, SLMInference
-
+from MediaCrawler import MediaCrawler
 
 # 定义全局变量
 if "stance_detection" not in st.session_state:
@@ -61,8 +61,15 @@ if "slm" not in st.session_state:
     st.session_state.slm = SLMInference()
 
 
-def call_crawler(**kwargs) -> str:
-    return "data/analysis/demo.csv"
+def call_crawler(platform: str, keywords: list[str], max_crawl_note: int = 30) -> list[str] | None:
+    media_crawler = MediaCrawler(platform=platform, keywords=keywords, max_crawl_note=max_crawl_note)
+    csv = media_crawler.crawl()
+    if csv is not None:
+        csv = media_crawler.get_valid_csv_file_path(csv)
+        return csv
+    else:
+        st.error("没有找到相关数据，请检查关键词或平台设置。")
+        return None
 
 
 st.title("公共舆情分析系统")
@@ -95,18 +102,18 @@ topic = st.text_input("输入您想要监测的主题", "胡鑫宇，满江红�
 target = st.text_input("输入您想要监测的目标", "政府")
 keyword_monitoring = st.text_input("输入您想要检索的帖子关键词，用逗号分隔", "胡鑫宇, 满江红, 泼水节")
 platform = st.selectbox("选择社交媒体平台", ["Weibo", "RedNote", "Tieba"])
-date_range = st.date_input("选择日期范围", [pd.to_datetime("2023-01-01"), pd.to_datetime("2025-03-10")])
+# date_range = st.date_input("选择日期范围", [pd.to_datetime("2023-01-01"), pd.to_datetime("2025-03-10")])
+crawler_max_note = st.number_input("设置最大爬取帖子数", min_value=1, max_value=100, value=30, step=1)
 llm_used = st.selectbox("选择语言模型", ["不使用LLM", "GPT-4o", "DeepSeek-r1", "GPT-3.5", "GPT-3"])
 
+keywords = [kw.strip() for kw in keyword_monitoring.split(",") if kw.strip()]
 
 if st.button("开始监测"):
 
-    data_file = call_crawler(
-        topic=topic, target=target, keyword_monitoring=keyword_monitoring, platform=platform, date_range=date_range
-    )
+    data_file = call_crawler(keywords=keywords, platform=platform)
     if data_file is None:
         data_file = "analysis/demo.csv"
-
+    data_file = data_file[0]
     # 处理 CSV 文件
     stance_detection.process_csv(data_file)
     # 获取process_csv处理后的label列的占比
