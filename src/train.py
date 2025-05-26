@@ -1,12 +1,12 @@
 import json
 import torch
-from transformers import AdamW
 from transformers.optimization import get_scheduler
 from transformers.models.bert import BertTokenizer
 from datasets import load_dataset
 import numpy as np
 from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
-from transformers.training_args import TrainingArguments, Trainer
+from transformers.training_args import TrainingArguments
+from transformers.trainer import Trainer
 from sklearn.metrics import f1_score
 from torch.nn import CrossEntropyLoss
 import pandas as pd
@@ -23,7 +23,7 @@ import os
 import shutil
 
 
-def get_checkpoint_path(file_path) -> str:
+def get_checkpoint_path(file_path) -> str | None:
     """
     从文件路径中提取模型检查点路径
     """
@@ -147,7 +147,7 @@ def save_error_samples(trainer, dataset, output_file="logs/errors.csv"):
 # 训练配置
 training_args = TrainingArguments(
     output_dir="models/output",
-    evaluation_strategy="epoch",
+    eval_strategy="epoch",
     save_strategy="epoch",
     learning_rate=4e-5,
     per_device_train_batch_size=64,
