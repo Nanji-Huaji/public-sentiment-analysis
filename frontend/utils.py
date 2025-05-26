@@ -41,7 +41,7 @@ def cut_text(text: str, stopword: str) -> list:
     return words
 
 
-def cut_text_from_csv(csv_file: str, text_column: str, stopword: str = "frontend/data/stopwords.txt") -> list:
+def cut_text_from_csv(csv_file: str, text_column: str, stopword: str = "frontend/data/stopwords.txt") -> list[str]:
     """
     从csv文件中读取文本，进行分词，并去除停用词
     :param csv_file: csv文件路径
@@ -247,16 +247,16 @@ def draw_heatmap(
     return fig
 
 
-def merge_csv_files(input_files: list, output_file: str):
+def merge_csv_files(input_files: list[str]) -> str:
     """
-    合并多个CSV文件
+    合并多个CSV文件，并根据输入文件名自动生成输出文件路径
     :param input_files: 输入的CSV文件列表
-    :param output_file: 输出的合并后的CSV文件路径
+    :return: 合并后的CSV文件路径
     """
+    import re
     # 检查输入参数
     if not input_files:
         raise ValueError("输入文件列表不能为空")
-
     # 用于存储所有数据框的列表
     dfs = []
 
@@ -275,15 +275,29 @@ def merge_csv_files(input_files: list, output_file: str):
         raise ValueError("没有可合并的有效CSV文件")
 
     # 合并所有数据框
-    # pd.concat会自动处理同名列的合并
     merged_df = pd.concat(dfs, ignore_index=True)
 
+    # 自动生成输出文件名
+    # 假设文件名格式为: {file_count}_{crawler_type}_{store_type}_{date}.csv
+    first_file = os.path.basename(input_files[0])
+    match = re.match(r"(\d+)_([a-zA-Z0-9]+)_([a-zA-Z0-9]+)_([\d-]+)\\.csv", first_file)
+    if match:
+        file_count, crawler_type, _, date_str = match.groups()
+        output_file = f"{file_count}_{crawler_type}_merged_{date_str}.csv"
+    else:
+        # 如果格式不符，默认合并文件名
+        output_file = "merged_output.csv"
+
+    # 输出到与输入文件相同目录
+    output_dir = os.path.dirname(input_files[0])
+    output_path = os.path.join(output_dir, output_file)
+
     # 确保输出目录存在
-    output_dir = os.path.dirname(output_file)
     if output_dir and not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     # 保存合并后的数据框
-    merged_df.to_csv(output_file, index=False)
+    merged_df.to_csv(output_path, index=False)
 
-    print(f"已将 {len(dfs)} 个CSV文件合并保存至 {output_file}")
+    print(f"已将 {len(dfs)} 个CSV文件合并保存至 {output_path}")
+    return output_path

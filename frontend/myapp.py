@@ -12,6 +12,7 @@ from utils import (
     get_top_words_from_csv,
     draw_wordcloud,
     draw_heatmap,
+    merge_csv_files
 )
 
 import collections
@@ -61,16 +62,24 @@ if "slm" not in st.session_state:
     st.session_state.slm = SLMInference()
 
 
-def call_crawler(platform: str, keywords: list[str], max_crawl_note: int = 30) -> list[str] | None:
+def call_crawler(platform: str, keywords: list[str], max_crawl_note: int = 30) -> str | None:
     media_crawler = MediaCrawler(platform=platform, keywords=keywords, max_crawl_note=max_crawl_note)
     csv = media_crawler.crawl()
     if csv is not None:
         csv = media_crawler.get_valid_csv_file_path(csv)
+        if csv is None:
+            st.error("爬取数据失败，请检查平台设置或关键词。")
+            return None
+        csv = merge_csv_files(csv)
         return csv
     else:
         st.error("没有找到相关数据，请检查关键词或平台设置。")
         return None
 
+
+def call_crawler_test(*args, **kwargs) -> str:
+    time.sleep(30)  # 模拟爬取时间
+    return "data/analysis/demo.csv"
 
 st.title("公共舆情分析系统")
 
@@ -110,10 +119,29 @@ keywords = [kw.strip() for kw in keyword_monitoring.split(",") if kw.strip()]
 
 if st.button("开始监测"):
 
-    data_file = call_crawler(keywords=keywords, platform=platform)
+    data_file = None
+    progress_bar = st.progress(0, text="正在搜索数据……")
+    import threading
+    import time
+
+    def run_crawler():
+        global data_file
+        # data_file = call_crawler(keywords=keywords, platform=platform)
+        data_file = call_crawler_test(keywords=keywords, platform=platform, max_crawl_note=crawler_max_note)
+
+    thread = threading.Thread(target=run_crawler)
+    thread.start()
+    progress = 0
+    while thread.is_alive():
+        progress = min(progress + 5, 95)
+        progress_bar.progress(progress, text="正在搜索数据……")
+        time.sleep(0.1)
+    thread.join()
+    progress_bar.progress(100, text="正在搜索数据……")
+    # 等待进度条
+
     if data_file is None:
         data_file = "analysis/demo.csv"
-    data_file = data_file[0]
     # 处理 CSV 文件
     stance_detection.process_csv(data_file)
     # 获取process_csv处理后的label列的占比
