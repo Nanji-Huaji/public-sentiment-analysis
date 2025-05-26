@@ -136,7 +136,7 @@ cython_debug/
 .idea
 /temp_image/
 /browser_data/
-/data/
+
 
 */.DS_Store
 .vscode
