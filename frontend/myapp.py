@@ -12,10 +12,11 @@ from utils import (
     get_top_words_from_csv,
     draw_wordcloud,
     draw_heatmap,
-    merge_csv_files
+    merge_csv_files,
 )
 
 import collections
+import threading
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 from inference import StanceDetection, LLMInference, SLMInference
@@ -81,6 +82,7 @@ def call_crawler_test(*args, **kwargs) -> str:
     time.sleep(30)  # 模拟爬取时间
     return "data/analysis/demo.csv"
 
+
 st.title("公共舆情分析系统")
 
 stance_detection = st.session_state.stance_detection
@@ -111,7 +113,6 @@ topic = st.text_input("输入您想要监测的主题", "胡鑫宇，满江红�
 target = st.text_input("输入您想要监测的目标", "政府")
 keyword_monitoring = st.text_input("输入您想要检索的帖子关键词，用逗号分隔", "胡鑫宇, 满江红, 泼水节")
 platform = st.selectbox("选择社交媒体平台", ["Weibo", "RedNote", "Tieba"])
-# date_range = st.date_input("选择日期范围", [pd.to_datetime("2023-01-01"), pd.to_datetime("2025-03-10")])
 crawler_max_note = st.number_input("设置最大爬取帖子数", min_value=1, max_value=100, value=30, step=1)
 llm_used = st.selectbox("选择语言模型", ["不使用LLM", "GPT-4o", "DeepSeek-r1", "GPT-3.5", "GPT-3"])
 
@@ -142,6 +143,25 @@ if st.button("开始监测"):
 
     if data_file is None:
         data_file = "analysis/demo.csv"
+
+    # 处理 CSV 文件，添加进度条（多线程）
+    process_bar = st.progress(0, text="正在处理检索到的数据")
+    process_done = threading.Event()
+
+    def process_csv_thread():
+        stance_detection.process_csv(data_file)
+        process_done.set()
+
+    thread2 = threading.Thread(target=process_csv_thread)
+    thread2.start()
+    progress2 = 0
+    while not process_done.is_set():
+        progress2 = min(progress2 + 10, 95)
+        process_bar.progress(progress2, text="正在处理检索到的数据")
+        time.sleep(0.1)
+    thread2.join()
+    process_bar.progress(100, text="正在处理检索到的数据")
+
     # 处理 CSV 文件
     stance_detection.process_csv(data_file)
     # 获取process_csv处理后的label列的占比
