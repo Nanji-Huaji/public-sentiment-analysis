@@ -1,0 +1,3 @@
+[submodule "src/MediaCrawler"]
+	path = src/MediaCrawler
+	url = https://github.com/Nanji-Huaji/MediaCrawler.git
