@@ -144,7 +144,7 @@ def train_model(data_ratio: list, train_epochs: int, checkpoint_path: str, conda
     )
 
 
-def get_checkpoint_path(file_path) -> str:
+def get_checkpoint_path(file_path) -> str | None:
     """
     从文件路径中提取模型检查点路径
     """
@@ -158,7 +158,7 @@ def get_checkpoint_path(file_path) -> str:
     return latest_subdir
 
 
-def get_checkpoint_path_f1_highest(file_path) -> str:
+def get_checkpoint_path_f1_highest(file_path) -> str | None:
     """
     从 file_path 下所有子目录的 trainer_state.json 文件中提取 eval_f1 值，
     返回 eval_f1 最大的目录路径。
@@ -206,7 +206,7 @@ def get_checkpoint_path_f1_highest(file_path) -> str:
     return best_dir
 
 
-def get_best_checkpoint_from_latest_ten(file_path) -> str:
+def get_best_checkpoint_from_latest_ten(file_path) -> str | None:
     """
     从 file_path 下最新的十个子目录的 trainer_state.json 文件中提取 eval_f1 值，
     返回 eval_f1 最大的目录路径。
@@ -267,12 +267,13 @@ def main():
     在运行第一次后删除is_initial_train = True
     """
     is_initial_train = True
-    with open("data/processed/train.csv", "w", encoding="utf-8") as f:
-        f.write("text,target,label\n")  # 写入表头
     for dataset in ["nlpcc", "Weibo-SD", "C-Stance"]:
         raw_path = f"data/csv_data/{dataset}"
         processed_path = f"data/processed"
         if is_initial_train:
+            # 仅第一次运行时清空train.csv并写入表头
+            with open("data/processed/train.csv", "w", encoding="utf-8") as f:
+                f.write("text,target,label\n")
             checkpoint_path = get_checkpoint_path("models/output")
         else:
             checkpoint_path = get_best_checkpoint_from_latest_ten("models/output")

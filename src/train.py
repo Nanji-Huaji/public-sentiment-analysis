@@ -1,12 +1,12 @@
 import json
 import torch
-from transformers import AdamW
 from transformers.optimization import get_scheduler
 from transformers.models.bert import BertTokenizer
 from datasets import load_dataset
 import numpy as np
 from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
-from transformers.training_args import TrainingArguments, Trainer
+from transformers.training_args import TrainingArguments
+from transformers.trainer import Trainer
 from sklearn.metrics import f1_score
 from torch.nn import CrossEntropyLoss
 import pandas as pd
@@ -23,7 +23,7 @@ import os
 import shutil
 
 
-def get_checkpoint_path(file_path) -> str:
+def get_checkpoint_path(file_path) -> str | None:
     """
     从文件路径中提取模型检查点路径
     """
@@ -113,7 +113,7 @@ id2label = {0: "AGAINST", 1: "POSITIVE", 2: "NEITHER"}
 label2id = {"AGAINST": 0, "POSITIVE": 1, "NEITHER": 2}
 
 model = AutoModelForSequenceClassification.from_pretrained(
-    args.checkpoint_path, num_labels=3, id2label=id2label, label2id=label2id
+    args.checkpoint_path, num_labels=3, id2label=id2label, label2id=label2id, local_files_only=True
 )
 
 
@@ -146,8 +146,8 @@ def save_error_samples(trainer, dataset, output_file="logs/errors.csv"):
 
 # 训练配置
 training_args = TrainingArguments(
-    output_dir="models/output",
-    evaluation_strategy="epoch",
+    output_dir="/home/tiantianyi/code/public-sentiment-analysis/models",
+    eval_strategy="epoch",
     save_strategy="epoch",
     learning_rate=4e-5,
     per_device_train_batch_size=64,
@@ -185,11 +185,14 @@ class WeightedTrainer(Trainer):
         loss = loss_fct(outputs.logits.view(-1, model.module.num_labels), labels.view(-1))
         return (loss, outputs) if return_outputs else loss
 
-    def save_model(self, output_dir=None, _internal_call=False):
-        # 调用父类的 save_model 方法
+    def save_model(self, output_dir, _internal_call):
+        if output_dir is None:
+            raise ValueError("Output directory must be specified.")
+        # 确保输出目录存在
+        os.makedirs(output_dir, exist_ok=True)
         super().save_model(output_dir, _internal_call)
 
-        # 确保 logs/json 目录存在
+            # 确保 logs/json 目录存在
         os.makedirs("logs/json", exist_ok=True)
 
         # 定义 trainer_state.json 的路径
