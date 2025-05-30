@@ -1,10 +1,11 @@
-from transformers import BertTokenizer, BertForSequenceClassification
+from transformers.models.bert import BertTokenizer, BertForSequenceClassification
 from torch.utils.data import DataLoader
 from datasets import load_dataset
 import torch
 import numpy as np
 from sklearn.metrics import f1_score
-from transformers import Trainer, TrainingArguments
+from transformers.trainer import Trainer
+from transformers.training_args import TrainingArguments
 import evaluate
 
 id2label = {0: "AGAINST", 1: "POSITIVE", 2: "NEITHER"}
@@ -13,7 +14,7 @@ label2id = {"AGAINST": 0, "POSITIVE": 1, "NEITHER": 2}
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
 model = BertForSequenceClassification.from_pretrained(
-    "models/output/f1-46", num_labels=3, label2id=label2id, id2label=id2label
+    "models/produce/checkpoint-700", num_labels=3, label2id=label2id, id2label=id2label
 ).to(device)
 tokenizer = BertTokenizer.from_pretrained("google-bert/bert-base-multilingual-cased")
 
@@ -31,7 +32,7 @@ def tokenize_function(dataset):
 
 
 datasets = load_dataset(
-    "csv", data_files={"train": "data/csv_data/Weibo-SD/train.csv", "test": "data/csv_data/Weibo-SD/test.csv"}
+    "csv", data_files={"train": "data/csv_data/VAST/train.csv", "test": "data/csv_data/VAST/test.csv"}
 )
 test_datasets = datasets["test"]
 tokenized_test_datasets = test_datasets.map(tokenize_function, batched=True)

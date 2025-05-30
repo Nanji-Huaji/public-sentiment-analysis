@@ -141,3 +141,5 @@ cython_debug/
 */.DS_Store
 .vscode
 frontend/__pycache__/utils.cpython-312.pyc
+
+plot_f1_by_epoch.py

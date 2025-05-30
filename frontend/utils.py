@@ -264,6 +264,7 @@ def merge_csv_files(input_files: list[str]) -> str:
     for file in input_files:
         if os.path.exists(file):
             try:
+                convert_csv_column_name(file)
                 df = pd.read_csv(file)
                 dfs.append(df)
             except Exception as e:
@@ -301,3 +302,19 @@ def merge_csv_files(input_files: list[str]) -> str:
 
     print(f"已将 {len(dfs)} 个CSV文件合并保存至 {output_path}")
     return output_path
+
+def convert_csv_column_name(file: str) -> str:
+    '''
+    将CSV文件中的content列名转化为text列名
+    :param file: CSV文件路径
+    :return: CSV文件路径
+    '''
+    import pandas as pd
+    df = pd.read_csv(file)
+    if 'content' in df.columns:
+        df.rename(columns={'content': 'text'}, inplace=True)
+        df.to_csv(file, index=False)
+        print(f"已将 {file} 中的 'content' 列重命名为 'text'")
+    else:
+        print(f"{file} 中未找到 'content' 列，无需更改")
+    return file

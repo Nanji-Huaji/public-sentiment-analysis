@@ -47,6 +47,14 @@ class StanceDetection:
         df.to_csv(csv_file, index=False)
         return df
 
+    def process_csv_with_target(self, csv_file: str, target: str) -> pd.DataFrame:
+        df = pd.read_csv(csv_file)
+        df["text"] = df["text"].fillna("").astype(str)  # 保证text列为字符串且无缺失
+        stances = list(map(lambda text: self.classify(text, target), df["text"]))
+        df["label"] = list(map(lambda stance: self.label2id[stance["label"]], stances))
+        df.to_csv(csv_file, index=False)
+        return df
+
 
 class LLMInference:
     def __init__(
@@ -66,12 +74,13 @@ class LLMInference:
     def __call__(self, text):
         return self.inference(text)
 
-    def analyze(self, summary, target, **kwargs):
+    def analyze(self, summary, target, topic, **kwargs):
         favor_rate = kwargs.get("favor_rate", "未提供")
         neutral_rate = kwargs.get("neutral_rate", "未提供")
         against_rate = kwargs.get("against_rate", "未提供")
         top_words = kwargs.get("top_words", "未提供")
         prompt = analyze_prompt.format(
+            topic=topic,
             summary=summary,
             target=target,
             favor_rate=favor_rate,
@@ -105,12 +114,13 @@ class SLMInference:
     def __call__(self, prompt):
         return self.inference(prompt)
 
-    def summary(self, favor_text, neutral_text, against_text, target, **kwargs):
+    def summary(self, favor_text, neutral_text, against_text, target, topic="", **kwargs):
         favor_rate = kwargs.get("favor_rate", "未提供")
         neutral_rate = kwargs.get("neutral_rate", "未提供")
         against_rate = kwargs.get("against_rate", "未提供")
         top_words = kwargs.get("top_words", "未提供")
         prompt = summarize_prompt.format(
+            topic=topic,
             favor_text=favor_text,
             neutral_text=neutral_text,
             against_text=against_text,

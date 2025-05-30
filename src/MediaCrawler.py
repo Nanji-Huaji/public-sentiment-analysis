@@ -113,3 +113,19 @@ class MediaCrawler:
             return return_list
         else:
             return None
+
+    @staticmethod
+    def convert_csv_column_name(file: str) -> None:
+        '''
+        将CSV文件中的content列名转化为text列名
+        :param file: CSV文件路径
+        :return: None
+        '''
+        import pandas as pd
+        df = pd.read_csv(file)
+        if 'content' in df.columns:
+            df.rename(columns={'content': 'text'}, inplace=True)
+            df.to_csv(file, index=False)
+            print(f"已将 {file} 中的 'content' 列重命名为 'text'")
+        else:
+            print(f"{file} 中未找到 'content' 列，无需更改")

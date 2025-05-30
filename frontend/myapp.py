@@ -13,6 +13,7 @@ from utils import (
     draw_wordcloud,
     draw_heatmap,
     merge_csv_files,
+    convert_csv_column_name,
 )
 
 import collections
@@ -72,6 +73,7 @@ def call_crawler(platform: str, keywords: list[str], max_crawl_note: int = 30) -
             st.error("爬取数据失败，请检查平台设置或关键词。")
             return None
         csv = merge_csv_files(csv)
+        convert_csv_column_name(csv)
         return csv
     else:
         st.error("没有找到相关数据，请检查关键词或平台设置。")
@@ -79,7 +81,7 @@ def call_crawler(platform: str, keywords: list[str], max_crawl_note: int = 30) -
 
 
 def call_crawler_test(*args, **kwargs) -> str:
-    time.sleep(30)  # 模拟爬取时间
+    time.sleep(3)  # 模拟爬取时间
     return "data/analysis/demo.csv"
 
 
@@ -87,7 +89,11 @@ st.title("公共舆情分析系统")
 
 stance_detection = st.session_state.stance_detection
 
-st.markdown("这是一个简单的演示立场检测的demo。" "给定一个句子和一个目标，我们会告诉您该句子对目标的情感倾向。")
+st.subheader("立场检测")
+
+st.markdown(
+    "本模块演示了立场检测功能。您只需输入一个句子和检测目标，系统将自动判断该句子对目标的情感立场（支持、反对或中立），并给出相应的置信度。"
+)
 
 sentence = st.text_input("输入一个句子", "I feel great")
 target = st.text_input("输入一个你要检测的目标", "I")
@@ -98,20 +104,21 @@ if st.button("分析"):
     st.write(f"情感: {stance['label']}")
     st.write(f"置信度: {stance['score']}")
 
-st.title("公共舆情监控")
+st.subheader("公共舆情监控系统")
 
 st.markdown(
-    "这是一个演示我们的情感监测方法如何工作的简单示例。"
-    "给定一个监测主题，我们会为您展示最新社交媒体帖子的情感倾向。"
-    "请注意，该部分尚未完全实现。"
+    "本模块用于演示舆情监控方法。您可以输入关注的主题、目标和关键词，系统将自动爬取社交媒体平台的相关帖子，分析其情感立场分布，并可视化展示结果。"
+    "此外，您还可以选择使用大语言模型对监测结果进行进一步分析和总结。请注意，LLM生成内容可能存在一定偏差，仅供参考。"
 )
 
 st.markdown("您可以使用大语言模型来帮助监测公众舆论的情感倾向。")
 st.markdown("请注意，大语言模型可能存在偏见和幻觉问题，其生成的内容可能不够可靠。")
 
-topic = st.text_input("输入您想要监测的主题", "胡鑫宇，满江红，泼水节")
-target = st.text_input("输入您想要监测的目标", "政府")
-keyword_monitoring = st.text_input("输入您想要检索的帖子关键词，用逗号分隔", "胡鑫宇, 满江红, 泼水节")
+topic = st.text_input("输入您想要监测的主题", "中学生登珠峰是否能被清华录取")
+target = st.text_input("输入您想要监测的目标", "中学生")
+keyword_monitoring = st.text_input(
+    "输入您想要检索的帖子关键词，用逗号分隔", "中学生登珠峰, 中学生登珠峰是否能被清华录取"
+)
 platform = st.selectbox("选择社交媒体平台", ["Weibo", "RedNote", "Tieba"])
 crawler_max_note = st.number_input("设置最大爬取帖子数", min_value=1, max_value=100, value=30, step=1)
 llm_used = st.selectbox("选择语言模型", ["不使用LLM", "GPT-4o", "DeepSeek-r1", "GPT-3.5", "GPT-3"])
@@ -127,8 +134,8 @@ if st.button("开始监测"):
 
     def run_crawler():
         global data_file
-        # data_file = call_crawler(keywords=keywords, platform=platform)
-        data_file = call_crawler_test(keywords=keywords, platform=platform, max_crawl_note=crawler_max_note)
+        data_file = call_crawler(keywords=keywords, platform=platform)
+        # data_file = call_crawler_test(keywords=keywords, platform=platform, max_crawl_note=crawler_max_note)
 
     thread = threading.Thread(target=run_crawler)
     thread.start()
@@ -149,7 +156,8 @@ if st.button("开始监测"):
     process_done = threading.Event()
 
     def process_csv_thread():
-        stance_detection.process_csv(data_file)
+        global stance_detection
+        stance_detection.process_csv_with_target(data_file, target)
         process_done.set()
 
     thread2 = threading.Thread(target=process_csv_thread)
@@ -162,15 +170,13 @@ if st.button("开始监测"):
     thread2.join()
     process_bar.progress(100, text="正在处理检索到的数据")
 
-    # 处理 CSV 文件
-    stance_detection.process_csv(data_file)
-    # 获取process_csv处理后的label列的占比
+    # 获取处理后的stance列的占比
     df = pd.read_csv(data_file)
-    label_counts = df["label"].value_counts(normalize=True)
-    label_counts = label_counts.reindex([1, 0, 2], fill_value=0)  # 确保顺序为 POSITIVE, NEGATIVE, NEUTRAL
-    pos_ratio = label_counts[1]
-    neg_ratio = label_counts[0]
-    neu_ratio = label_counts[2]
+    stance_counts = df["stance"].value_counts(normalize=True)
+    stance_counts = stance_counts.reindex([1, 0, 2], fill_value=0)  # 1:POSITIVE, 0:AGAINST, 2:NEITHER
+    pos_ratio = stance_counts[1]
+    neg_ratio = stance_counts[0]
+    neu_ratio = stance_counts[2]
     # 处理文本
     word_list = cut_text_from_csv(data_file, "text")
     word_count = collections.Counter(word_list)
@@ -216,6 +222,7 @@ if st.button("开始监测"):
         sampled_data_list = [sampled_data_dict[0], sampled_data_dict[1], sampled_data_dict[2]]
 
         slm_summary = st.session_state.slm.summary(
+            topic=topic,
             favor_text=sampled_data_list[1],
             neutral_text=sampled_data_list[2],
             against_text=sampled_data_list[0],
